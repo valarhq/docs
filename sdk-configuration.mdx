@@ -1,18 +1,30 @@
 ---
 title: "Configuration"
-description: "How endpoints and retries are resolved by the SDK, via valar.Config and valar.RetryPolicy"
+description: "Resolve endpoints and retry behavior with valar.Config and valar.RetryPolicy"
 ---
 
-For most apps, environment variables are all the configuration you need: set
-`VALAR_API_KEY` (and, if you like, `VALAR_MODE`) and you're set. `valar.Config`
-captures whatever the SDK resolved from those variables and is exported so you
-can see exactly which backend you're pointed at.
+You rarely configure the SDK by hand. Set `VALAR_API_KEY`, optionally pick a
+`VALAR_MODE`, and the SDK works out the rest. `valar.Config` is simply the
+resolved result of that process, exposed so you can confirm where requests are
+headed.
 
-## valar.Config
+## Environment variables
 
-A `Config` carries the SDK's resolved settings — your API key and the API URL
-it will contact. Typically you'll build it straight from the environment using
-`Config.from_env()`.
+The SDK reads these at startup:
+
+| Variable | Required | Effect |
+| -------- | -------- | ------ |
+| `VALAR_API_KEY` | For inference | Your `sk_...` key. Inference fails without it; `valar.trace` falls back to no-op. |
+| `VALAR_MODE` | No | Named environment to target. Defaults to `prod`. |
+| `VALAR_API_URL` | No | Explicit base URL that overrides whatever `VALAR_MODE` would resolve. |
+
+The broader set of Trace and agent-attribution variables is documented in the
+[Traces environment table](/traces-sdk#environment-variables).
+
+## Resolving a Config
+
+`Config.from_env()` reads the environment and returns the settings the SDK will
+use. Print `api_url` to verify the target:
 
 ```python theme={null}
 import valar
@@ -21,7 +33,7 @@ config = valar.Config.from_env()
 print(config.api_url)  # https://api.valarhq.ai/v1 (prod default)
 ```
 
-### Constructors
+Two constructors exist, differing only in how they treat a missing key:
 
 ```python theme={null}
 @classmethod
@@ -31,51 +43,52 @@ def from_env() -> Config
 def from_env_optional_api_key() -> Config
 ```
 
-* `Config.from_env()` parses the environment and **requires** `VALAR_API_KEY`,
-  raising `ValueError` when it isn't set. Inference calls rely on this path.
-* `Config.from_env_optional_api_key()` behaves identically except that the API
-  key is optional — it backs diagnostic code paths (such as `valar.trace`'s
-  no-op mode) that must not crash when no key is configured.
+* `Config.from_env()` **requires** `VALAR_API_KEY` and raises `ValueError` if it
+  is unset. This is the path inference uses.
+* `Config.from_env_optional_api_key()` treats the key as optional. It supports
+  diagnostic paths — such as the no-op mode of `valar.trace` — that must not
+  crash when no key is present.
 
-### Attributes
+### Fields
 
-| Attribute | Description                                |
-| --------- | ------------------------------------------ |
-| `api_key` | Your ValarAI API key (`sk_...`).           |
-| `api_url` | Base URL for inference and traces.         |
+<ParamField path="api_key" type="str">
+  Your ValarAI API key, in the `sk_...` format.
+</ParamField>
 
-### Modes and endpoint resolution
+<ParamField path="api_url" type="str">
+  Base URL the SDK contacts for both inference and traces.
+</ParamField>
 
-`VALAR_MODE` picks a named environment; with no value set, the `prod` defaults
-apply. Any value the SDK doesn't recognize raises `ValueError`.
+## How the endpoint is chosen
 
-| `VALAR_MODE`     | `api_url`                       |
-| ---------------- | ------------------------------- |
-| `prod` (default) | `https://api.valarhq.ai/v1`     |
-| `dev`            | `https://dev.valarhq.ai`        |
-| `staging`        | `https://staging.valarhq.ai`    |
-| `local`          | `http://localhost:8080`         |
+`VALAR_MODE` selects a named environment. With nothing set, the `prod` defaults
+apply. An unrecognized value raises `ValueError`.
 
-To bypass the mode default entirely, set `VALAR_API_URL` directly — it wins
-over whatever the mode would otherwise resolve to.
+| `VALAR_MODE` | Resolved `api_url` |
+| ------------ | ------------------ |
+| `prod` (default) | `https://api.valarhq.ai/v1` |
+| `dev` | `https://dev.valarhq.ai` |
+| `staging` | `https://staging.valarhq.ai` |
+| `local` | `http://localhost:8080` |
 
-<Note>
-  The complete catalog of SDK environment variables — including the Trace and
-  agent attribution settings — lives in the [Traces environment
-  table](/traces-sdk#environment-variables).
-</Note>
+Setting `VALAR_API_URL` skips this table entirely — its value takes precedence
+over whatever the mode would have produced.
 
-## Retries
+## Retry behavior
 
-Transient failures are retried for you automatically. Out of the box the SDK
-will try up to 3 times, backing off exponentially with full jitter and
-respecting a server-supplied `Retry-After` header when one is returned:
+The SDK retries transient failures on your behalf, so you don't wire anything up
+per call. The default policy makes up to 3 attempts, backs off exponentially
+with full jitter, and honors a server `Retry-After` header when present.
 
-* **502 / 503 / 504** always trigger a retry.
-* **429** is retried only if the response carries a valid `Retry-After`.
-* **500** and every other status are raised right away, with no retry.
+Which responses retry:
 
-This behavior is described by `valar.RetryPolicy`. Two ready-made instances are
-exported: `valar.DEFAULT_RETRY_POLICY` (the policy above) and `valar.NO_RETRY`
-(a single attempt, no retries). They're there for inspection — the SDK drives
-retries internally, so there's nothing for you to wire up per call.
+| Status | Retried? |
+| ------ | -------- |
+| 502 / 503 / 504 | Always |
+| 429 | Only with a valid `Retry-After` |
+| 500 and all others | Never — raised immediately |
+
+This is what `valar.RetryPolicy` describes. Two instances are exported for
+inspection: `valar.DEFAULT_RETRY_POLICY` (the policy above) and `valar.NO_RETRY`
+(one attempt, no retries). The SDK applies retries internally, so these are for
+reading, not configuring.

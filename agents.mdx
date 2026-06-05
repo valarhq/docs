@@ -1,22 +1,51 @@
 ---
 title: "Building a Tool-Calling Agent"
-description: "Drive multi-turn, tool-using conversations on the ValarAI API"
+description: "Wire external tools into a multi-turn ValarAI conversation and let the model orchestrate them"
 ---
 
-With the Responses API, ValarAI lets the model invoke your external tools and reason over what they return — turn after turn — so you can assemble full agents on top of it.
+An agent is a model that can reach outside the conversation: it asks to run a function you control, reads what comes back, and decides what to do next. The Responses API at `/v1/responses` exposes exactly the primitives you need for this — tool definitions on the way in, `function_call` items on the way out, and `function_call_output` items to feed results back in.
 
-## The loop
+This guide builds a small agent that books meeting rooms, walks through what each field does, and closes with the operational settings that matter once it's running for real.
 
-1. Post a user message together with your **tool definitions** to `/v1/responses`.
-2. In its reply, the model can emit one or more `function_call` items, either in place of text or alongside it.
-3. Run those tools on your side, then issue a fresh request that carries the complete conversation history plus the outcomes wrapped as `function_call_output` items.
-4. Keep going until a response comes back containing text alone.
+## What you provide and what you get back
 
-Every call carries the conversation in full. The items inside `response.output` are already valid input items, so you can push them straight onto your conversation list without any conversion — then tack on the `function_call_output` results.
+You hand the model a list of `tools`. Each tool is a JSON Schema description of a function it may call. When the model decides a tool is needed, its `response.output` contains one or more `function_call` items instead of (or alongside) plain text. You execute those calls and report back.
 
-## Worked example: a two-turn weather agent
+The key property to internalize: **the API is stateless across requests, so you carry the conversation yourself.** Every item in `response.output` is already a valid input item. You append those items to your running list verbatim — no reshaping — then append your tool results as `function_call_output` items and send the whole thing again.
 
-Here we use `zai-org/GLM-5.1-FP8`. The model handles a weather lookup on the first turn and, on the second, answers a follow-up by drawing on what it learned earlier.
+<Note>
+  Because you replay the full history on each request, the model always sees its
+  own earlier tool calls and their outputs. There is nothing to serialize or
+  translate; output items go back in as-is.
+</Note>
+
+## The conversation cycle
+
+<Steps>
+  <Step title="Send the user turn plus your tools">
+    Append the user message to your conversation list and `POST` it to
+    `/v1/responses` along with the `tools` array.
+  </Step>
+  <Step title="Inspect the output for tool calls">
+    Scan `response.output` for items of type `function_call`. If there are none,
+    the turn is finished and `output_text` holds the answer.
+  </Step>
+  <Step title="Run each requested function">
+    Parse the `arguments` JSON on each call, execute the matching function on
+    your side, and capture its return value.
+  </Step>
+  <Step title="Append results and resend">
+    Push the model's `response.output` items onto your list, then append one
+    `function_call_output` per call (matched by `call_id`). Send the updated
+    conversation back and return to step 2.
+  </Step>
+</Steps>
+
+The loop ends on the first response that carries text with no `function_call` items.
+
+## Example: a room-booking assistant
+
+The agent below answers scheduling questions with two tools: one that checks a room's availability and one that reserves it. The model is `moonshotai/Kimi-K2.6`. On the first user turn it looks up availability; once you return the result it reserves the room and writes a confirmation. A second user turn then reuses everything already in context to book a follow-up.
 
 ```python theme={null}
 import json
@@ -29,35 +58,52 @@ client = OpenAI(
     api_key="YOUR_VALAR_API_KEY",
 )
 
-MODEL = "zai-org/GLM-5.1-FP8"
+MODEL = "moonshotai/Kimi-K2.6"
 
 TOOLS = [
     {
         "type": "function",
-        "name": "get_weather",
-        "description": "Get the current weather for a location.",
+        "name": "check_room",
+        "description": "Check whether a meeting room is free for a time slot.",
         "parameters": {
             "type": "object",
             "properties": {
-                "location": {
-                    "type": "string",
-                    "description": "City and state, e.g. San Francisco, CA",
-                }
+                "room": {"type": "string", "description": "Room name, e.g. Birch"},
+                "slot": {"type": "string", "description": "Time slot, e.g. 2026-06-08 14:00"},
             },
-            "required": ["location"],
+            "required": ["room", "slot"],
+            "additionalProperties": False,
+        },
+        "strict": True,
+    },
+    {
+        "type": "function",
+        "name": "reserve_room",
+        "description": "Reserve a meeting room for a time slot.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "room": {"type": "string", "description": "Room name, e.g. Birch"},
+                "slot": {"type": "string", "description": "Time slot, e.g. 2026-06-08 14:00"},
+            },
+            "required": ["room", "slot"],
             "additionalProperties": False,
         },
         "strict": True,
     },
 ]
 
-TOOL_DISPATCH = {"get_weather": lambda location: '{"temperature": "62°F", "condition": "Foggy"}'}
+TOOL_DISPATCH = {
+    "check_room": lambda room, slot: json.dumps({"room": room, "slot": slot, "free": True}),
+    "reserve_room": lambda room, slot: json.dumps({"room": room, "slot": slot, "confirmation": "RSV-4417"}),
+}
 
 
-def poll(response, timeout=300):
-    start = time.time()
+def await_completion(response, timeout=300):
+    """Poll a background response until it settles."""
+    deadline = time.time() + timeout
     while response.status not in ("completed", "failed", "cancelled"):
-        if time.time() - start > timeout:
+        if time.time() > deadline:
             raise TimeoutError(f"{response.id} did not complete within {timeout}s")
         time.sleep(2)
         response = client.responses.retrieve(response.id)
@@ -66,8 +112,8 @@ def poll(response, timeout=300):
     return response
 
 
-def agent_turn(conversation, user_message):
-    """Send a user message and loop until the model stops calling tools."""
+def run_turn(conversation, user_message):
+    """Append a user message and drive the tool loop to a final text answer."""
     conversation.append({"role": "user", "content": user_message})
 
     while True:
@@ -78,47 +124,57 @@ def agent_turn(conversation, user_message):
             max_output_tokens=4096,
             background=True,
         )
-        response = poll(response)
+        response = await_completion(response)
+
+        # Output items are valid input items: append them unchanged.
+        conversation.extend(response.output)
 
         tool_calls = [
             item for item in (response.output or [])
             if getattr(item, "type", None) == "function_call"
         ]
-        conversation.extend(response.output)
-
         if not tool_calls:
             return response
 
         for call in tool_calls:
             args = json.loads(call.arguments)
-            output = TOOL_DISPATCH[call.name](**args)
+            result = TOOL_DISPATCH[call.name](**args)
             conversation.append(
-                {"type": "function_call_output", "call_id": call.call_id, "output": output}
+                {"type": "function_call_output", "call_id": call.call_id, "output": result}
             )
 
 
 conversation = []
 
-# Turn 1: triggers a get_weather tool call, then the model summarizes the result
-response = agent_turn(conversation, "What's the weather in San Francisco?")
-print("Turn 1:", response.output_text)
+# First turn: the model checks availability, then reserves and confirms.
+first = run_turn(conversation, "Is the Birch room free at 2pm on June 8? If so, book it.")
+print("Turn 1:", first.output_text)
 
-# Turn 2: follow-up reuses conversation context
-response = agent_turn(conversation, "How about New York — warmer or colder?")
-print("Turn 2:", response.output_text)
+# Second turn: the model reuses the booking already in context.
+second = run_turn(conversation, "Great — also grab the Cedar room right after, at 3pm the same day.")
+print("Turn 2:", second.output_text)
 ```
 
-### Step by step
+<Accordion title="How the two turns play out item by item">
+  On turn one the model emits a `check_room` call. You return `free: true`, resend
+  the conversation, and the model follows up with a `reserve_room` call. After you
+  return the confirmation number, the next response is plain text — the loop exits.
 
-1. **Turn 1** — given the question and the tool definition, the model fires a `get_weather` call for San Francisco. Once we hand the result back, we issue a second request and the model writes up a text summary.
+  On turn two you resend the entire history, including turn one's calls and their
+  outputs. The model already knows June 8 from context, so it only needs to call
+  `check_room` and `reserve_room` for Cedar before confirming.
+</Accordion>
 
-2. **Turn 2** — we resend the entire conversation, Turn 1's call and result included. The model requests `get_weather` for New York and, with the result in hand, weighs it against the San Francisco figures already sitting in context.
+## Running it in production
 
-## Tips
+<Tip>
+  Set `strict: true` on each tool's parameters. This enables structured-output
+  guarantees, so the `arguments` JSON the model returns always conforms to your
+  schema and `json.loads` never trips over a malformed payload.
+</Tip>
 
-* **Pick a completion window to match your agent loop.** For most agent workloads, the default `standard` window strikes a sensible cost-versus-trajectory-time balance; switch to `priority` when single turns are latency-sensitive, or `flex` for background batches that can tolerate hours of queueing. The [Completion windows](/completion-windows) page covers response-time distributions and pricing.
-* **Favor `background=True`** for agents that run a while. Because ValarAI is tuned for throughput, a request can take longer than you'd expect from a low-latency API; background mode sidesteps HTTP timeouts and lets you poll instead.
-* **Always resend the whole conversation.** That means every earlier message, all `response.output` items, and every tool result. Output items from prior responses drop straight in — no serialization or conversion required.
-* **`strict: true`** on your tool parameters turns on structured-output guarantees, so the `arguments` JSON the model emits will always match your schema.
-* **Parallel tool calls** work out of the box — a single response may carry several `function_call` items at once.
-* **Set a per-request `Idempotency-Key` header** so that a retry serves the stored response rather than rerunning inference and billing you twice. See [Idempotent Requests](/idempotency).
+- **Prefer `background=True` for anything long-running.** ValarAI optimizes for throughput, so an individual request can run longer than a latency-first API would. Background mode avoids HTTP timeouts and lets you poll for completion instead.
+- **Match the completion window to your loop.** The default `standard` window balances cost against trajectory time for most agents. Use `priority` when a single turn is latency-sensitive, or `flex` for background work that can wait in a queue. See [Completion windows](/completion-windows) for response-time and pricing details.
+- **Replay the complete conversation every request.** Every prior message, all `response.output` items, and every `function_call_output` must be present. Output items drop back in without conversion.
+- **Handle parallel calls.** A single response can contain several `function_call` items at once; execute them all and return one `function_call_output` per `call_id`.
+- **Send an `Idempotency-Key` header per request** so a retry returns the stored response instead of rerunning inference and double-billing. See [Idempotent Requests](/idempotency).

@@ -1,177 +1,199 @@
 ---
 title: "LoRAs"
-description: "Upload your own PEFT-trained LoRA adapters and serve them on compatible models"
+description: "Serve your own PEFT-trained LoRA adapters against compatible ValarAI base models"
 ---
 
-ValarAI lets you bring PEFT-trained LoRAs and run them against supported base models. Once an adapter is uploaded, assign it a name and reference that name (or its ID) through request metadata.
-
-## Supported base models
+If you have trained a LoRA with PEFT, you can host it on ValarAI and route requests through it. The flow is: upload the adapter, give it a name, let ValarAI validate it against each base model you want, then reference that name (or its ID) in request metadata at inference time.
 
 <Note>
-  LoRA serving is presently in a closed pilot limited to select partners. If you
-  want to fine-tune and serve LoRAs on ValarAI, [reach
-  out](mailto:support@valarhq.ai).
+  LoRA serving is currently a closed pilot open to select partners. To fine-tune and serve LoRAs on ValarAI, [reach out](mailto:support@valarhq.ai).
 </Note>
 
-The following base models can serve LoRAs:
+## What you can serve it on
 
-| Base model             | Max rank | Target modules |
-| ---------------------- | -------- | -------------- |
-| `moonshotai/Kimi-K2.6` | 32       | all            |
+These base models accept LoRAs today. The rank ceiling and the modules you may target are fixed per base model:
 
-When an adapter doesn't match the base model, or its rank goes above the limit, either validation or inference will fail.
+| Base model | Max rank | Target modules |
+| ---------- | -------- | -------------- |
+| `moonshotai/Kimi-K2.6` | 32 | all |
 
-## Adapter requirements
+If an adapter does not match its base model, or its rank climbs above the ceiling, it fails at either validation or inference.
 
-Fine-tune using [PEFT](https://huggingface.co/docs/peft) and ship the two standard artifacts:
+## What the adapter must contain
 
-* `adapter_config.json`
-* `adapter_model.safetensors`
+Train with [PEFT](https://huggingface.co/docs/peft) and produce the two standard artifacts:
 
-Your adapter config needs values that line up with the base model:
+- `adapter_config.json`
+- `adapter_model.safetensors`
 
-* **`base_model_name_or_path`** should point at the base model registered in `supported_models` (for example, `moonshotai/Kimi-K2.6`).
-* **`peft_type`** must be `"LORA"`.
-* **`task_type`** must be `"CAUSAL_LM"`.
-* **`r`** (the rank) cannot exceed the base model's max rank.
-* **`target_modules`** may name any modules that the base model and runtime support. For Kimi K2.6 LoRAs, ValarAI imposes no fixed target-module allowlist.
+<Note>
+  Each of the two files may be up to 100 GiB.
+</Note>
 
-The remaining adapter-config fields — `lora_alpha`, `lora_dropout`, bias settings, and so on — carry through unchanged.
+Inside `adapter_config.json`, the following fields have to agree with the base model:
 
-Each of `adapter_config.json` and `adapter_model.safetensors` may be as large as 100 GiB.
+<ParamField path="base_model_name_or_path" type="string">
+  Must point at a base model registered in `supported_models`, for example `moonshotai/Kimi-K2.6`.
+</ParamField>
+
+<ParamField path="peft_type" type="string">
+  Must be `"LORA"`.
+</ParamField>
+
+<ParamField path="task_type" type="string">
+  Must be `"CAUSAL_LM"`.
+</ParamField>
+
+<ParamField path="r" type="integer">
+  The rank. Must not exceed the base model's max rank.
+</ParamField>
+
+<ParamField path="target_modules" type="array">
+  Any modules the base model and runtime support. Kimi K2.6 LoRAs have no fixed target-module allowlist.
+</ParamField>
+
+Everything else in the config — `lora_alpha`, `lora_dropout`, bias settings, and the rest — passes through untouched.
 
 ## Add a LoRA
 
-Adding a LoRA takes three steps: upload the config, upload the weights, and then issue a `POST /v1/loras`. The response carries a validation record per requested model.
+<Steps>
+  <Step title="Upload both adapter files">
+    Send each file to `POST /v1/files` (multipart) with `purpose="lora"`:
 
-### 1. Upload the two adapter files
+    ```python theme={null}
+    from openai import OpenAI
 
-Send both with `POST /v1/files` (multipart):
+    client = OpenAI(base_url="https://api.valarhq.ai/v1", api_key="YOUR_KEY")
 
-```python theme={null}
-from openai import OpenAI
+    with open("my-adapter/adapter_config.json", "rb") as f:
+        cfg = client.files.create(file=f, purpose="lora")
 
-client = OpenAI(base_url="https://api.valarhq.ai/v1", api_key="YOUR_KEY")
+    with open("my-adapter/adapter_model.safetensors", "rb") as f:
+        wts = client.files.create(file=f, purpose="lora")
+    ```
 
-with open("my-adapter/adapter_config.json", "rb") as f:
-    cfg = client.files.create(file=f, purpose="lora")
+    Both file IDs must belong to the same organization as your API key.
+  </Step>
 
-with open("my-adapter/adapter_model.safetensors", "rb") as f:
-    wts = client.files.create(file=f, purpose="lora")
-```
+  <Step title="Register the LoRA">
+    Call `POST /v1/loras` with the two file IDs and the models you want to run on:
 
-### 2. Create the LoRA
+    ```python theme={null}
+    import requests
 
-```python theme={null}
-import requests
+    resp = requests.post(
+        "https://api.valarhq.ai/v1/loras",
+        headers={"Authorization": "Bearer YOUR_KEY"},
+        json={
+            "name": "punchier-v1",
+            "supported_models": ["moonshotai/Kimi-K2.6"],
+            "config_file_id": cfg.id,
+            "weights_file_id": wts.id,
+            # optional
+            "display_name": "Punchier v1",
+            "description": "Tuned on a standup-comedy corpus for joke-forward replies.",
+        },
+        timeout=30,
+    )
+    resp.raise_for_status()
+    lora = resp.json()
+    print(lora["id"], lora["status"])  # e.g. 3fa85f64-... pending_validation
+    ```
 
-resp = requests.post(
-    "https://api.valarhq.ai/v1/loras",
-    headers={"Authorization": "Bearer YOUR_KEY"},
-    json={
-        "name": "funnier-v1",
-        "supported_models": ["moonshotai/Kimi-K2.6"],
-        "config_file_id": cfg.id,
-        "weights_file_id": wts.id,
-        # optional
-        "display_name": "Funnier v1",
-        "description": "Fine-tuned on a standup-comedy corpus to write punchier, joke-forward replies.",
-    },
-    timeout=30,
-)
-resp.raise_for_status()
-lora = resp.json()
-print(lora["id"], lora["status"])  # e.g. 3fa85f64-... pending_validation
-```
+    Constraints on the request:
 
-Every value in `supported_models` has to be a recognized ValarAI model ID.
+    - Every entry in `supported_models` must be a recognized ValarAI model ID.
+    - `name` is 2 to 64 characters, lowercase `[a-z0-9-]`, must start and end with an alphanumeric, and must be unique within your organization — a duplicate returns `409`.
+    - The file IDs must belong to your organization.
+  </Step>
 
-The `name` field follows these rules:
+  <Step title="Wait for validation to finish">
+    `POST /v1/loras` creates one validation record per entry in `supported_models`, returned under `validations`:
 
-* between 2 and 64 characters
-* lowercase alphanumerics or dashes (`[a-z0-9-]`)
-* the first and last characters must be alphanumeric
-* unique within your organization (a duplicate returns `409`)
-
-The file IDs you supply have to belong to the same organization as your API key.
-
-### Validation flow
-
-For each entry in `supported_models`, `POST /v1/loras` produces one validation record. These records show up in the response under `validations`:
-
-```json theme={null}
-{
-  "id": "3fa85f64-...",
-  "name": "funnier-v1",
-  "status": "pending_validation",
-  "supported_models": ["moonshotai/Kimi-K2.6"],
-  "validations": [
+    ```json theme={null}
     {
-      "model": "moonshotai/Kimi-K2.6",
-      "status": "pending",
-      "response_id": "resp_..."
+      "id": "3fa85f64-...",
+      "name": "punchier-v1",
+      "status": "pending_validation",
+      "supported_models": ["moonshotai/Kimi-K2.6"],
+      "validations": [
+        {
+          "model": "moonshotai/Kimi-K2.6",
+          "status": "pending",
+          "response_id": "resp_..."
+        }
+      ]
     }
-  ]
-}
-```
+    ```
 
-ValarAI runs validation against every model listed in `supported_models`. Poll `GET /v1/loras/{name}` until the model you intend to use has finished validating.
+    ValarAI validates against every listed model. Poll `GET /v1/loras/{name}` until the model you plan to use has finished:
 
-| Validation status | Meaning                                                                                            |
-| ----------------- | -------------------------------------------------------------------------------------------------- |
-| `pending`         | The validation task has been created.                                                              |
-| `running`         | The validation request is underway.                                                                |
-| `succeeded`       | The LoRA loaded and finished a validation request for that model.                                  |
-| `failed`          | The LoRA can't be used for that model. See `result_code` and `result_message` for the failure.     |
-| `unverified`      | ValarAI was unable to validate automatically.                                                      |
+    | Validation status | Meaning |
+    | ----------------- | ------- |
+    | `pending` | The validation task has been created. |
+    | `running` | The validation request is underway. |
+    | `succeeded` | The LoRA loaded and completed a validation request for that model. |
+    | `failed` | The LoRA cannot be used for that model. Check `result_code` and `result_message`. |
+    | `unverified` | ValarAI could not validate automatically. |
 
-Check `validations` for per-model status. A request that uses a LoRA is only rejected when that model's most recent validation is `failed`; records in `pending`, `running`, or `unverified` states stay usable.
+    A request using the LoRA is rejected only when that model's most recent validation is `failed`. Records in `pending`, `running`, or `unverified` remain usable.
 
-Should you later attach a model via `PATCH /v1/loras/{name}`, ValarAI generates validation records for the newly added models that haven't already passed validation.
+    <Note>
+      Attach more models later with `PATCH /v1/loras/{name}`. ValarAI creates validation records for any newly added models that have not already passed.
+    </Note>
+  </Step>
 
-### 3. Fetch LoRAs
+  <Step title="Read back your LoRAs">
+    ```bash theme={null}
+    # by name
+    curl -H "Authorization: Bearer $VALAR_API_KEY" https://api.valarhq.ai/v1/loras/punchier-v1
 
-```bash theme={null}
-# by name
-curl -H "Authorization: Bearer $VALAR_API_KEY" https://api.valarhq.ai/v1/loras/funnier-v1
+    # by id
+    curl -H "Authorization: Bearer $VALAR_API_KEY" https://api.valarhq.ai/v1/loras/3fa85f64-...
 
-# by id
-curl -H "Authorization: Bearer $VALAR_API_KEY" https://api.valarhq.ai/v1/loras/3fa85f64-...
+    # all loras for your org
+    curl -H "Authorization: Bearer $VALAR_API_KEY" https://api.valarhq.ai/v1/loras
+    ```
+  </Step>
+</Steps>
 
-# list all loras for your org
-curl -H "Authorization: Bearer $VALAR_API_KEY" https://api.valarhq.ai/v1/loras
-```
+## Run a request through a LoRA
 
-## Use a LoRA
+Set the LoRA's name or its UUID as `metadata.lora` on any Responses, Chat Completions, or Messages request. The `model` you pick must appear in that LoRA's `supported_models`.
 
-On any Responses, Chat Completions, or Messages request, set the LoRA's name (or its UUID) as `metadata.lora`. The `model` you choose has to appear in that LoRA's `supported_models`:
+<Tabs>
+  <Tab title="Responses">
+    ```python theme={null}
+    response = client.responses.create(
+        model="moonshotai/Kimi-K2.6",
+        input=[{"role": "user", "content": "Write a one-liner about a centrifuge having a bad day."}],
+        metadata={
+            "lora": "punchier-v1",
+            "completion_window": "priority",
+        },
+        background=True,
+    )
+    ```
+  </Tab>
 
-```python theme={null}
-response = client.responses.create(
-    model="moonshotai/Kimi-K2.6",
-    input=[{"role": "user", "content": "Write a one-liner about a centrifuge that's having a bad day."}],
-    metadata={
-        "lora": "funnier-v1",
-        "completion_window": "priority",
-    },
-    background=True,
-)
-```
+  <Tab title="Chat Completions">
+    ```python theme={null}
+    response = client.chat.completions.create(
+        model="moonshotai/Kimi-K2.6",
+        messages=[{"role": "user", "content": "Tell me a joke about Go channels."}],
+        extra_body={"metadata": {"lora": "punchier-v1", "completion_window": "priority"}},
+    )
+    ```
+  </Tab>
+</Tabs>
 
-Chat Completions:
+<Warning>
+  `completion_window` cannot be `asap` on a LoRA request. Choose `priority`, `standard`, or `flex` — see [Completion Windows](/completion-windows).
+</Warning>
 
-```python theme={null}
-response = client.chat.completions.create(
-    model="moonshotai/Kimi-K2.6",
-    messages=[{"role": "user", "content": "Tell me a joke about Go channels."}],
-    extra_body={"metadata": {"lora": "funnier-v1", "completion_window": "priority"}},
-)
-```
+Keep these rules in mind when routing through a LoRA:
 
-### Constraints on LoRA requests
-
-* **`completion_window` can't be `asap`.** Pick `priority`, `standard`, or `flex` — the [Completion Windows](/completion-windows) page explains each one.
-* **`model` has to be listed in the LoRA's `supported_models`.** Asking for any other base model yields a `400`.
-* **A failed model validation blocks that model.** When validation fails, `GET /v1/loras/{name}` surfaces `validations[].result_message`.
-* **The LoRA has to be owned by your organization.** Names are per-org, so two organizations can each own a separate LoRA named `funnier-v1`.
-* **In `metadata.lora`, either the LoRA's name or its UUID works.**
+- `model` must be listed in the LoRA's `supported_models`. Any other base model returns a `400`.
+- A failed model validation blocks that model; `GET /v1/loras/{name}` exposes `validations[].result_message`.
+- The LoRA must be owned by your organization. Names are per-org, so two organizations can each own a LoRA named `punchier-v1`.
+- `metadata.lora` accepts either the LoRA's name or its UUID.

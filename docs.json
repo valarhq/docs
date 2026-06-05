@@ -29,95 +29,87 @@
   "navigation": {
     "tabs": [
       {
-        "tab": "Documentation",
+        "tab": "Guides",
         "groups": [
           {
-            "group": "Inference",
-            "icon": "bolt",
-            "pages": [
-              {
-                "group": "Getting Started",
-                "pages": ["index", "quickstart", "models", "pricing"]
-              },
-              {
-                "group": "Platform",
-                "pages": [
-                  "completion-windows",
-                  "webhooks",
-                  "support",
-                  "loras",
-                  "images",
-                  "idempotency"
-                ]
-              },
-              {
-                "group": "Guides",
-                "pages": ["agents", "opencode", "requests_at_scale"]
-              },
-              {
-                "group": "Security",
-                "pages": ["dpa"]
-              }
-            ]
+            "group": "Start here",
+            "icon": "flag",
+            "pages": ["index", "quickstart", "models", "pricing"]
+          },
+          {
+            "group": "Build agents",
+            "icon": "robot",
+            "pages": ["agents", "requests_at_scale", "opencode"]
+          },
+          {
+            "group": "Inputs and adapters",
+            "icon": "layer-group",
+            "pages": ["images", "loras"]
+          },
+          {
+            "group": "Run in production",
+            "icon": "gauge-high",
+            "pages": ["completion-windows", "webhooks", "idempotency"]
+          },
+          {
+            "group": "Platform",
+            "icon": "shield-halved",
+            "pages": ["support", "dpa"]
           }
         ]
       },
       {
-        "tab": "Reference",
+        "tab": "API reference",
+        "openapi": "/openapi.json",
         "groups": [
           {
-            "group": "Inference APIs",
-            "openapi": "/openapi.json",
+            "group": "Responses",
             "pages": [
-              {
-                "group": "Models API",
-                "pages": ["api-reference/models-api/list-supported-models"]
-              },
-              {
-                "group": "Responses API",
-                "pages": [
-                  "api-reference/responses-api/create-a-response",
-                  "api-reference/responses-api/retrieve-a-response"
-                ]
-              },
-              {
-                "group": "Chat Completions API",
-                "pages": ["api-reference/chat-completions-api/create-a-chat-completion"]
-              },
-              {
-                "group": "Messages API",
-                "pages": ["api-reference/messages-api/create-an-anthropic-message"]
-              },
-              {
-                "group": "Batches API",
-                "pages": [
-                  "api-reference/batches-api/list-batches",
-                  "api-reference/batches-api/create-a-batch",
-                  "api-reference/batches-api/get-batch-status",
-                  "api-reference/batches-api/get-batch-request-result"
-                ]
-              }
+              "api-reference/responses-api/create-a-response",
+              "api-reference/responses-api/retrieve-a-response"
             ]
           },
           {
-            "group": "Usage API",
+            "group": "Chat completions",
+            "pages": ["api-reference/chat-completions-api/create-a-chat-completion"]
+          },
+          {
+            "group": "Messages",
+            "pages": ["api-reference/messages-api/create-an-anthropic-message"]
+          },
+          {
+            "group": "Batches",
+            "pages": [
+              "api-reference/batches-api/list-batches",
+              "api-reference/batches-api/create-a-batch",
+              "api-reference/batches-api/get-batch-status",
+              "api-reference/batches-api/get-batch-request-result"
+            ]
+          },
+          {
+            "group": "Models",
+            "pages": ["api-reference/models-api/list-supported-models"]
+          },
+          {
+            "group": "Usage",
             "pages": ["usage", "usage-endpoints"]
+          }
+        ]
+      },
+      {
+        "tab": "SDK",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": ["sdk-introduction", "sdk-configuration"]
           },
           {
-            "group": "ValarAI SDK",
-            "pages": [
-              "sdk-introduction",
-              "sdk-configuration",
-              {
-                "group": "Traces",
-                "pages": [
-                  "traces-sdk",
-                  "traces-sdk-inference",
-                  "traces-sdk-errors"
-                ]
-              },
-              "sdk-tinker"
-            ]
+            "group": "Traces",
+            "pages": ["traces-sdk", "traces-sdk-inference", "traces-sdk-errors"]
+          },
+          {
+            "group": "Integrations",
+            "pages": ["sdk-tinker"]
           }
         ]
       }

@@ -1,7 +1,21 @@
 ---
 title: "Pricing"
-description: "Per-token rates for ValarAI inference"
+description: "How ValarAI bills inference and the per-token rate for every model"
 ---
+
+## How billing works
+
+You pay per token. Three rates apply to each request: **input** for the tokens you send, **cached** for input tokens served from a prefix cache, and **output** for the tokens the model generates. Every figure in the table below is in **USD per 1M tokens**.
+
+Caching is automatic — ValarAI matches shared prompt prefixes for you and charges the lower cached rate on the tokens that hit. You can raise your hit rate by passing [`prompt_cache_key`](/api-reference/responses-api/create-a-response#body-prompt-cache-key) as a routing hint, but it's optional.
+
+The rate you pay also depends on the completion window you request. ValarAI runs four windows — `asap`, `priority`, `standard`, and `flex` — and faster scheduling carries a higher rate. The table lists every model with its windows priced out; not every model offers every window. [Completion Windows](/completion-windows) explains the trade-offs, and you can mix windows per request.
+
+<Note>
+  Window coverage differs by model, and we keep adding models and widening window support. If a model or window you want isn't shown, <a href="mailto:support@valarhq.ai">get in touch</a>.
+</Note>
+
+## Rate table
 
 {/* Pricing rows below are auto-generated from config/models.json */}
 
@@ -1100,7 +1114,4 @@ description: "Per-token rates for ValarAI inference"
   </div>
 </div>
 
-* ValarAI offers four completion windows: `standard`, `priority`, `flex`, and `asap`. Full details are on the [Completion Windows](/completion-windows) page.
-  * Window availability varies by model. We continually add new models and broaden window coverage on existing ones as demand grows. If something you need isn't listed above, <a href="mailto:support@valarhq.ai">get in touch</a>.
-* Caching happens automatically via prefix matching. To boost cache hit rates, you can optionally supply [`prompt_cache_key`](/api-reference/responses-api/create-a-response#body-prompt-cache-key) as a routing hint.
-* Head to [Models](/models) for capabilities and further details on each supported model.
+For each model's capabilities — image input, LoRA, and reasoning support — see [Models](/models).

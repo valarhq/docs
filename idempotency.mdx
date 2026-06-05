@@ -1,13 +1,17 @@
 ---
 title: "Idempotent Requests"
-description: "Patterns for safely retrying calls to the ValarAI inference APIs"
+description: "How an idempotency key lets you retry inference calls without paying for the same work twice"
 ---
 
-Send a `POST` request with an **idempotency key** header, and ValarAI records the reservation together with the response it produces. Send the same request again under the same key, and you get the originally reserved response back — inference is never re-run. That makes it safe for clients to retry through flaky networks, timeouts, and uncertain 5xx responses.
+## The problem retries create
 
-## Sending an idempotency key
+A `POST` that times out or returns a `5xx` leaves you guessing. The server may have received the request and run the inference, or it may not have. Retrying blindly risks running — and billing — the same job twice. Not retrying risks dropping a job that never actually completed.
 
-Mint one key per logical request — UUIDs, or any unique string up to 255 characters, work well — and reuse it on the first try and on every retry.
+An idempotency key removes the guesswork. You attach a key to the first attempt, ValarAI stores the response under that key, and every later attempt with the same key returns that stored response instead of running inference again. Retrying becomes safe across flaky networks, timeouts, and ambiguous `5xx` responses.
+
+## How it works
+
+Send the key in the `Idempotency-Key` request header. Use one key per logical request — a UUID or any unique string up to 255 characters — and send the same key on the first attempt and every retry.
 
 <CodeGroup>
   ```python theme={null}
@@ -37,18 +41,29 @@ Mint one key per logical request — UUIDs, or any unique string up to 255 chara
   ```
 </CodeGroup>
 
-## Behavior
+The first call reserves the key and runs the job. Each subsequent call with that key lands on the same reservation and returns the stored response without re-running inference. The key only earns its keep once you actually retry.
 
-* **Scope.** A reservation is keyed on `(organization, API key, idempotency key)`. Send the same key under a different API key and it counts as a separate reservation — so rotating keys won't break replay, but reusing one idempotency key across multiple API keys won't dedupe either.
-* **Body fingerprint.** ValarAI takes a SHA-256 fingerprint of the request body. Reuse a key with a meaningfully different body and you get `400 idempotency_error` instead of the earlier response — which stops a retry from quietly handing back the wrong answer after the client altered the request.
-* **Validation failures don't consume the key.** If a request fails validation — any `4xx` raised before the reservation is written — the key stays unreserved. You're free to fix the body and retry under the same key.
-* **Replays reflect current state.** A replay returns the live state of the underlying response record rather than a frozen copy. With background requests, the `status` you see tracks the task's latest transition (for instance, `queued` → `in_progress` → `completed`).
+## Rules that govern a reservation
 
-## Retrying with an idempotency key
+<ParamField path="Reservation scope" type="(organization, API key, idempotency key)">
+  A reservation is identified by all three together. The same key under a different API key is a separate reservation. Rotating API keys therefore won't break replay, but the same idempotency key won't dedupe across two different API keys.
+</ParamField>
 
-The benefit only materializes once you actually retry. Your first call reserves the key; every later call lands on that same reservation and returns the stored response without re-running inference.
+<ParamField path="Body fingerprint" type="SHA-256">
+  ValarAI fingerprints the request body. Reusing a key with a meaningfully different body returns `400 idempotency_error` rather than the earlier response, which prevents a retry from silently returning the wrong answer after the client changed the request.
+</ParamField>
 
-### When to retry
+<ParamField path="Validation failures" type="key not consumed">
+  Any `4xx` raised before the reservation is written leaves the key unreserved. You can fix the body and retry under the same key.
+</ParamField>
+
+<ParamField path="Replays reflect live state" type="not a frozen copy">
+  A replay returns the current state of the underlying response record. For background requests the `status` tracks the task's latest transition, such as `queued` → `in_progress` → `completed`.
+</ParamField>
+
+## Deciding when to retry
+
+Reach for the same idempotency key whenever the outcome is ambiguous. Don't retry when the work genuinely failed.
 
 | Signal                  | What it means                                                   | What to do                                |
 | ----------------------- | --------------------------------------------------------------- | ----------------------------------------- |
@@ -57,7 +72,9 @@ The benefit only materializes once you actually retry. Your first call reserves 
 | `429` + `Retry-After`   | Rate limit                                                      | Wait the `Retry-After` value, then retry  |
 | `body.status: "failed"` | Inference genuinely failed                                      | Investigate the cause; do not blind-retry |
 
-### How to retry
+## A retry loop with backoff
+
+Generate the key once, outside the loop, so every attempt shares it.
 
 ```python theme={null}
 import random
@@ -92,5 +109,5 @@ print(resp.json()["id"])
 
 ## See also
 
-* [Sending Requests at Scale](/requests_at_scale) — the batch and background workflows where idempotent retries pay off most.
-* [Webhooks](/webhooks) — combine idempotent retries with webhook delivery so a client can re-drive submission without triggering another inference run.
+- [Sending Requests at Scale](/requests_at_scale) — the batch and background workflows where idempotent retries pay off most.
+- [Webhooks](/webhooks) — pair idempotent retries with webhook delivery so a client can re-drive submission without triggering another inference run.

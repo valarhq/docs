@@ -1,7 +1,21 @@
 ---
 title: "Models"
-description: "Every model ValarAI currently serves"
+description: "The open-weight models you can run on ValarAI and how to pick one"
 ---
+
+## Pick a model by what you need
+
+Start from the capability you can't do without, then narrow down:
+
+* **You need to pass images.** Reach for a multimodal checkpoint. Kimi-K2.6 and both Gemma 4 31B IT builds accept image input; the rest are text-only.
+* **You want to attach a LoRA adapter.** Kimi-K2.6 is the only model that serves [LoRA](/loras) adapters today.
+* **You want the model to reason before answering.** Every model on ValarAI supports reasoning, so this rarely constrains your choice.
+
+Once you've matched the capability, weigh size and cost. The smaller Gemma 4 31B IT builds are a fit for high-volume, latency-sensitive traffic, while DeepSeek V4 Pro and Kimi-K2.6 sit at the frontier end. Per-token rates for each model and completion window are on the [Pricing](/pricing) page.
+
+## What ships in the table
+
+Each row maps a model to the exact Hugging Face checkpoint ValarAI serves, alongside its support for image input, LoRA, and reasoning. Where a model is offered in more than one quantization — as with Gemma 4 31B IT and its NVFP4 build — every variant is listed under its own model ID, since each is requested separately.
 
 {/* Capability rows below are auto-generated from config/models.json */}
 
@@ -669,6 +683,6 @@ description: "Every model ValarAI currently serves"
   </table>
 </div>
 
-* Every row points to the precise Hugging Face checkpoint ValarAI serves. When multiple quantizations are available, each appears as its own model ID.
-* Call [`GET /v1/models`](/api-reference/models-api/list-supported-models) against your target environment to verify what's available at runtime for your API key.
-* Rates broken down per model and completion window live on the [Pricing](/pricing) page.
+<Note>
+  To confirm what your API key can reach in a given environment at runtime, call [`GET /v1/models`](/api-reference/models-api/list-supported-models) against that environment rather than relying on this table alone.
+</Note>

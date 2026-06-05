@@ -1,73 +1,74 @@
 ---
 title: "Data Processing Agreement"
-description: "ValarAI's approach to safeguarding customer data"
+description: "How ValarAI processes, stores, and protects customer data when running inference"
 ---
 
-* **Applies to:** every ValarAI customer using ValarAI's inference services
-* **Contact:** [neil@valarhq.ai](mailto:neil@valarhq.ai)
-* **Effective date:** 2026-03-01
+<Note>
+  **Applies to:** every ValarAI customer using ValarAI's inference services
+  **Effective date:** 2026-03-01
+  **Contact:** [neil@valarhq.ai](mailto:neil@valarhq.ai)
+</Note>
 
-This document sets out how ValarAI handles customer data — personal data included — in the course of delivering its AI inference services.
+This document describes how ValarAI handles customer data — including personal data — while delivering its AI inference services.
 
-***
+## Definitions
 
-## 1. Roles
+- **Customer Content** — the prompts, inputs, files, and related data submitted to run an inference job, together with the outputs the service returns.
+- **Job metadata** — the operational metadata required to run and track jobs, such as job identifiers, timestamps, status, and routing or state information.
+- **Compute subprocessor** — a third-party compute provider ValarAI may draw on to run inference.
 
-* **The Customer is the controller of the data** it sends to ValarAI and decides which inference jobs are run.
-* **ValarAI acts as processor**, handling that data solely to carry out the requested inference job and return the results to the Customer.
+## 1. Controller and processor roles
 
-## 2. What data ValarAI processes
+The Customer is the **controller** of the data it sends to ValarAI and decides which inference jobs run. ValarAI is the **processor**: it handles that data solely to carry out the requested inference job and return the results to the Customer.
 
-The data ValarAI may handle falls into two categories:
+## 2. Scope of data processed
 
-* **Customer Content:** the prompts, inputs, files, and related data submitted to run an inference job, together with the outputs the service returns.
-* **Job metadata:** the operational metadata needed to run and track jobs — for instance, job identifiers, timestamps, status, and routing or state information.
+ValarAI may handle two categories of data, defined above: **Customer Content** and **Job metadata**.
 
-## 3. How ValarAI uses Customer data
+## 3. Permitted and prohibited uses
 
-ValarAI puts Customer data to work for **two purposes only**:
+ValarAI uses Customer data for **two purposes only**:
 
-* running the inference job the Customer has requested, and
-* operating the service capabilities that job depends on (routing, scheduling, and job-state tracking).
+1. running the inference job the Customer has requested, and
+2. operating the service capabilities that job depends on — routing, scheduling, and job-state tracking.
 
 ValarAI will **not**:
 
-* use Customer Content to train, fine-tune, or otherwise improve any machine learning model — whether ValarAI's own or a third party's,
-* use Customer Content for marketing or advertising, or
-* gather telemetry from GPU machines that would capture Customer Content.
+- use Customer Content to train, fine-tune, or otherwise improve any machine learning model, whether ValarAI's own or a third party's;
+- use Customer Content for marketing or advertising; or
+- collect telemetry from GPU machines that would capture Customer Content.
 
 ## 4. Storage and retention
 
-* **Persistent storage:** the only place Customer Content is stored persistently is in **Amazon S3 buckets** — unless the Customer opts for the customer-owned bucket arrangement described below.
-* **Transient processing:** everything else happens **transiently and in-memory only**, lasting no longer than the job itself.
-* **Automatic deletion:** ValarAI's production S3 buckets carry an automated deletion rule (an S3 bucket lifecycle policy) that removes Customer Content soon after processing. Actual timing can shift because of job retries, failures, or other operational factors. In no event will ValarAI hold Customer Content for more than 48 hours.
-* **Customer-owned buckets (optional):** Customers wanting tighter control over storage configuration and retention may elect to use their own **Customer-owned S3 buckets**.
+| Aspect | How ValarAI handles it |
+| --- | --- |
+| Persistent storage | Customer Content is stored persistently only in **Amazon S3 buckets**, unless the Customer opts for the customer-owned bucket arrangement below. |
+| Transient processing | Everything else happens **transiently and in-memory only**, lasting no longer than the job itself. |
+| Automatic deletion | ValarAI's production S3 buckets carry an automated deletion rule (an S3 bucket lifecycle policy) that removes Customer Content soon after processing. Timing can shift due to job retries, failures, or other operational factors. **In no event will ValarAI hold Customer Content for more than 48 hours.** |
+| Customer-owned buckets (optional) | Customers wanting tighter control over storage configuration and retention may elect to use their own **Customer-owned S3 buckets**. |
 
 ## 5. Security and access controls
 
-To protect Customer data, ValarAI relies on security controls that include:
+ValarAI protects Customer data with controls that include the following.
 
-* **Authenticated GPU machines:** inference GPU machines talk to ValarAI infrastructure over TLS (certificate transparency required) and authenticate with a high-entropy bearer token. These GPU machines are never publicly reachable.
-* **Restricted connectivity:** inference machines reach only the services they need:
-  * container registry
-  * routing service
-  * object storage (e.g. Amazon S3)
-* **Data center assurance:** ValarAI relies on cloud and data center providers that maintain **SOC 2** and **ISO 27001** assurance programs.
-* **Compute provider restrictions:** ValarAI may draw on several third-party compute providers ("compute subprocessors"), subject to two conditions:
-  * compute subprocessors are barred from accessing Customer Content, and
-  * compute subprocessors must never store Customer Content unencrypted.
+- **Authenticated GPU machines.** Inference GPU machines connect to ValarAI infrastructure over TLS (certificate transparency required) and authenticate with a high-entropy bearer token. They are never publicly reachable.
+- **Restricted connectivity.** Inference machines reach only the services they need:
+  - container registry
+  - routing service
+  - object storage (e.g. Amazon S3)
+- **Data center assurance.** ValarAI relies on cloud and data center providers that maintain **SOC 2** and **ISO 27001** assurance programs.
+- **Compute provider restrictions.** ValarAI may draw on several compute subprocessors, subject to two conditions:
+  - they are barred from accessing Customer Content, and
+  - they must never store Customer Content unencrypted.
 
-## 6. Subprocessors (third-party providers)
+## 6. Subprocessors
 
-ValarAI engages third-party providers for infrastructure such as compute, container distribution, routing, and job-state tracking.
-With the sole exception of Amazon S3 as described in Section 4 above, subprocessors never store Customer data.
+ValarAI engages third-party providers for infrastructure such as compute, container distribution, routing, and job-state tracking. With the sole exception of Amazon S3 as described in Section 4, subprocessors never store Customer data. ValarAI may update its subprocessors from time to time.
 
-ValarAI may update its subprocessors from time to time.
+## 7. Security incident notification
 
-## 7. Security incidents (breach notification)
-
-Should ValarAI become aware of a security incident involving unauthorized access to Customer Personal Data, it will notify the Customer **within 72 hours** of becoming aware.
+If ValarAI becomes aware of a security incident involving unauthorized access to Customer Personal Data, it will notify the Customer **within 72 hours** of becoming aware.
 
 ## 8. Questions
 
-Questions about this document or about how ValarAI handles Customer data can be directed to: **[neil@valarhq.ai](mailto:neil@valarhq.ai)**.
+Direct any questions about this document or about how ValarAI handles Customer data to **[neil@valarhq.ai](mailto:neil@valarhq.ai)**.

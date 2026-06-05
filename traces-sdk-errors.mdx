@@ -1,11 +1,12 @@
 ---
 title: "Errors"
-description: "Exception taxonomy for Traces and inference"
+description: "The exception hierarchy raised by Traces and inference calls"
 ---
 
-Every Trace and inference exception descends from `valar.ValarError`, the base
-class for all SDK errors. The Trace delivery calls — `flush`, `complete`, and
-`fail` — raise these, whereas `event()` never raises network errors.
+Every exception the SDK raises descends from `valar.ValarError`. Catch that base
+class to handle anything the SDK can throw, or catch a narrower subclass to
+respond to a specific failure. Note that only the blocking Trace delivery calls —
+`flush`, `complete`, and `fail` — raise; `event()` never raises network errors.
 
 ```text theme={null}
 ValarError
@@ -15,6 +16,8 @@ ValarError
 ├─ InferenceError
 │  └─ InferenceHTTPError
 ```
+
+A typical handler narrows from the specific case to the general one:
 
 ```python theme={null}
 import valar
@@ -27,37 +30,48 @@ except valar.TraceError as exc:
     ...  # any other Trace delivery failure
 ```
 
-## TraceError
+## Trace errors
 
-The base class for Trace SDK errors — think a flush that timed out, or a full
-buffer while a terminal event is being preserved. Subclass of `ValarError`.
+<AccordionGroup>
+  <Accordion title="TraceError">
+    The base class for Trace SDK failures — a flush that timed out, or a buffer
+    that filled while a terminal event was being preserved, for instance.
+    Subclass of `ValarError`.
+  </Accordion>
+  <Accordion title="TraceHTTPError">
+    Raised when the Trace API responds with an HTTP error. Subclass of
+    `TraceError`.
 
-## TraceHTTPError
+    <ResponseField name="status_code" type="int">
+      HTTP status code.
+    </ResponseField>
+    <ResponseField name="response" type="dict | None">
+      Parsed error response body.
+    </ResponseField>
+  </Accordion>
+  <Accordion title="TraceNotFoundError">
+    Raised on HTTP 404, when no Trace matches the current API key. As a subclass
+    of `TraceHTTPError`, it carries `status_code` and `response`.
+  </Accordion>
+</AccordionGroup>
 
-Raised when the Trace API responds with an HTTP error. Subclass of `TraceError`.
+## Inference errors
 
-| Attribute     | Type           | Description                 |
-| ------------- | -------------- | --------------------------- |
-| `status_code` | `int`          | HTTP status code.           |
-| `response`    | `dict \| None` | Parsed error response body. |
+<AccordionGroup>
+  <Accordion title="InferenceError">
+    The base class for [inference](/traces-sdk-inference) wrapper failures. It
+    fires when `stream=True` is passed — unsupported in v0 — or when no API key
+    is configured. Subclass of `ValarError`.
+  </Accordion>
+  <Accordion title="InferenceHTTPError">
+    Raised when a ValarAI inference endpoint returns a non-2xx response. Subclass
+    of `InferenceError`.
 
-## TraceNotFoundError
-
-Raised when no Trace can be found for the current API key (HTTP 404). Because it
-subclasses `TraceHTTPError`, it carries `status_code` and `response`.
-
-## InferenceError
-
-The base class for [inference](/traces-sdk-inference) wrapper errors. It fires,
-for example, when `stream=True` is passed (unsupported in v0) or when no API key
-is configured. Subclass of `ValarError`.
-
-## InferenceHTTPError
-
-Raised when a ValarAI inference endpoint returns a non-2xx response. Subclass of
-`InferenceError`.
-
-| Attribute     | Type           | Description                 |
-| ------------- | -------------- | --------------------------- |
-| `status_code` | `int`          | HTTP status code.           |
-| `response`    | `dict \| None` | Parsed error response body. |
+    <ResponseField name="status_code" type="int">
+      HTTP status code.
+    </ResponseField>
+    <ResponseField name="response" type="dict | None">
+      Parsed error response body.
+    </ResponseField>
+  </Accordion>
+</AccordionGroup>

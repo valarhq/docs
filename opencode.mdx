@@ -1,37 +1,45 @@
 ---
 title: "Using OpenCode with ValarAI"
-description: "Point OpenCode at ValarAI as its LLM backend."
+description: "Run the OpenCode coding agent against ValarAI models through a single provider block."
 ---
 
-[OpenCode](https://opencode.ai) is an open-source coding agent. Since ValarAI speaks the OpenAI-compatible protocol, wiring the two together is nothing more than a configuration tweak.
+[OpenCode](https://opencode.ai) is an open-source terminal coding agent. It talks to any backend that speaks the OpenAI-compatible protocol, and ValarAI does — so connecting them is purely a matter of adding one provider entry to your OpenCode config.
 
-## Install
+## How the pieces fit
 
-Grab OpenCode using the steps at [opencode.ai](https://opencode.ai). Most people install it with:
+OpenCode reads a JSONC config file and routes model requests to whichever provider you register. You register ValarAI under the key `valar`, point it at `https://api.valarhq.ai/v1`, and list the models you want to use. From then on you reference any ValarAI model as `valar/<model-id>` — for example `valar/zai-org/GLM-5.1-FP8`.
 
-```bash theme={null}
-curl -fsSL https://opencode.ai/install | bash
-```
+## Get set up
 
-## Get your API key
+<Steps>
+  <Step title="Install OpenCode">
+    Follow the instructions at [opencode.ai](https://opencode.ai). The one-line
+    installer covers most setups:
 
-Create an account at [ValarAI](https://app.valarhq.ai) and generate an API key.
-
-## Configure
-
-Set up your OpenCode config so ValarAI is the default provider:
-
-```bash theme={null}
-mkdir -p ~/.config/opencode
-```
-
-Drop the following into `~/.config/opencode/opencode.jsonc`:
+    ```bash theme={null}
+    curl -fsSL https://opencode.ai/install | bash
+    ```
+  </Step>
+  <Step title="Create a ValarAI API key">
+    Sign in at [ValarAI](https://app.valarhq.ai) and generate an API key. Keep it
+    handy for the next step.
+  </Step>
+  <Step title="Create the config directory">
+    ```bash theme={null}
+    mkdir -p ~/.config/opencode
+    ```
+  </Step>
+  <Step title="Write the provider config">
+    Save the block below to `~/.config/opencode/opencode.jsonc`, replacing
+    `YOUR_VALAR_API_KEY` with the key you generated.
+  </Step>
+</Steps>
 
 ```jsonc theme={null}
 {
   "$schema": "https://opencode.ai/config.json",
-  "model": "valar/zai-org/GLM-5.1-FP8", // model for heavy lifting
-  "small_model": "valar/openai/gpt-oss-120b", // model for lightweight tasks
+  "model": "valar/zai-org/GLM-5.1-FP8", // primary model for coding work
+  "small_model": "valar/openai/gpt-oss-120b", // cheaper model for light tasks
   "provider": {
     "valar": {
       "npm": "@ai-sdk/openai-compatible",
@@ -50,17 +58,35 @@ Drop the following into `~/.config/opencode/opencode.jsonc`:
 }
 ```
 
-Swap in the key you just generated wherever `YOUR_VALAR_API_KEY` appears.
+<Note>
+  The `model` and `small_model` keys set the defaults OpenCode reaches for. Point
+  each at a model you've listed under `provider.valar.models`, prefixed with
+  `valar/`.
+</Note>
 
-## Run
+## Start coding
+
+Launch OpenCode from your project directory:
 
 ```bash theme={null}
 opencode
 ```
 
-With OpenCode running, type `/models`, search for "ValarAI", and jump between any of the models you defined in your config.
+Once it's running, type `/models`, search for "ValarAI", and switch between any of the models you defined. OpenCode will route each request through the `valar` provider to ValarAI.
 
-## Tips
+<Accordion title="Adding a model later">
+  Whenever ValarAI ships a model you want to use, add one line under
+  `provider.valar.models` with its model ID and a display name, then reference it
+  as `valar/<model-id>`:
 
-* **Where to go next** — check out OpenCode's [Usage guide](https://opencode.ai/docs/#usage).
-* **Adding models** — each time ValarAI ships a new model, list it under `provider.valar.models`.
+  ```jsonc theme={null}
+  "models": {
+    "zai-org/GLM-5.1-FP8": { "name": "GLM-5.1" },
+    "moonshotai/Kimi-K2.6": { "name": "Kimi-K2.6" },
+  },
+  ```
+
+  See [Models](/models) for the current list of model IDs.
+</Accordion>
+
+For more on what OpenCode can do once it's connected, see its [usage guide](https://opencode.ai/docs/#usage).

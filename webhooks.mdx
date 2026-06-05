@@ -1,125 +1,168 @@
 ---
 title: "Webhooks"
-description: "Get notified on completion through completion_webhook and webhook_token"
+description: "Receive a callback when a background request finishes instead of polling for it"
 ---
 
-Any request you submit via `POST /v1/responses`, `POST /v1/chat/completions`, or `POST /v1/messages` can carry a **completion webhook** in its metadata. Once the request finishes processing, ValarAI POSTs the complete response payload to the URL you supplied, sparing you from having to poll.
+When a request can take a while to finish, you don't have to poll `GET /v1/responses/{response_id}` in a loop. Attach a callback URL to the request and ValarAI delivers the finished result to your server as an HTTP POST. The feature works on `POST /v1/responses`, `POST /v1/chat/completions`, and `POST /v1/messages`, and is configured entirely through two `metadata` keys.
 
-## Enabling a completion webhook
+## Parameters
 
-Add a `completion_webhook` URL to the `metadata` object on your create request. It has to be an `http` or `https` URL.
+Both keys live inside the `metadata` object on the create request. The same keys apply to Chat Completions and Anthropic Messages requests.
 
-<CodeGroup>
-  ```python theme={null}
-  from openai import OpenAI
+<ParamField path="metadata.completion_webhook" type="string">
+  The destination URL for the callback. Must be an `http` or `https` URL. If you omit it or pass a value that can't be used, no callback is sent and the request itself is unaffected.
+</ParamField>
 
-  client = OpenAI(
-      api_key="YOUR_VALAR_API_KEY",
-      base_url="https://api.valarhq.ai/v1",
-  )
+<ParamField path="metadata.webhook_token" type="string">
+  An optional shared secret. ValarAI sends its value as a Bearer token in the callback's `Authorization` header so your endpoint can confirm the request is genuine.
+</ParamField>
 
-  response = client.responses.create(
-      model="zai-org/GLM-5.1-FP8",
-      input="Summarize this document.",
-      background=True,
-      metadata={
-          "completion_webhook": "https://your-server.com/valar-completion",
-      },
-  )
-  ```
+## Set up an endpoint
 
-  ```bash theme={null}
-  curl -X POST https://api.valarhq.ai/v1/responses \
-    -H "Authorization: Bearer YOUR_VALAR_API_KEY" \
-    -H "Content-Type: application/json" \
-    -d '{
-      "model": "zai-org/GLM-5.1-FP8",
-      "input": "Summarize this document.",
-      "background": true,
-      "metadata": {
-        "completion_webhook": "https://your-server.com/valar-completion"
-      }
-    }'
-  ```
-</CodeGroup>
+<Steps>
+  <Step title="Expose a route that accepts POST">
+    Your endpoint receives a JSON body and should respond as soon as it has accepted the payload. The body matches exactly what `GET /v1/responses/{response_id}` returns for the same request.
 
-Leaving out `metadata.completion_webhook`, or supplying an invalid value, simply means no webhook is fired. Neither the create call nor the response is affected — webhooks are optional and delivered on a best-effort basis.
+    ```python theme={null}
+    from fastapi import FastAPI, Request
 
-The same metadata keys (`completion_webhook`, `webhook_token`) go on the request body for both Chat Completions and Anthropic Messages.
+    app = FastAPI()
 
-## Webhook payload
+    @app.post("/hooks/inference-done")
+    async def inference_done(request: Request):
+        payload = await request.json()
+        # payload is the same object GET /v1/responses/{id} returns
+        enqueue_for_processing(payload["id"], payload)
+        return {"ok": True}
+    ```
+  </Step>
 
-The **POST** that ValarAI sends to your URL contains:
+  <Step title="Verify the Authorization header">
+    If you set `webhook_token`, reject any incoming call whose header doesn't match. Compare against `Authorization: Bearer <your token>` and return a 4xx for anything else.
 
-* **Content-Type:** `application/json`
-* **Body:** The identical JSON object you'd get back from `GET /v1/responses/{response_id}`
+    ```python theme={null}
+    from fastapi import Header, HTTPException
 
-## Securing webhooks with a token
+    WEBHOOK_TOKEN = "whk_3f0a9c2e7b14"
 
-Set `webhook_token` in the `metadata` to confirm that incoming calls genuinely originate from ValarAI. ValarAI then passes that token's value as a Bearer token in the webhook POST's `Authorization` header.
+    def assert_authorized(authorization: str = Header(default="")):
+        if authorization != f"Bearer {WEBHOOK_TOKEN}":
+            raise HTTPException(status_code=401)
+    ```
+  </Step>
 
-<CodeGroup>
-  ```python theme={null}
-  response = client.responses.create(
-      model="zai-org/GLM-5.1-FP8",
-      input="Summarize this document.",
-      background=True,
-      metadata={
-          "completion_webhook": "https://your-server.com/valar-completion",
-          "webhook_token": "your-secret-token",
-      },
-  )
-  ```
-</CodeGroup>
+  <Step title="Submit a request that points at your endpoint">
+    Set `background=True` and add the callback URL (and token, if you use one) to `metadata`.
 
-On your end, validate `Authorization: Bearer your-secret-token` and turn away anything that doesn't line up.
+    <CodeGroup>
+      ```python theme={null}
+      from openai import OpenAI
 
-## Delivery behavior
+      client = OpenAI(
+          api_key="YOUR_VALAR_API_KEY",
+          base_url="https://api.valarhq.ai/v1",
+      )
 
-* **Duplicates:** A given webhook may, on occasion, arrive more than once. Record the response `id` carried in the webhook body and skip any event you've already handled.
-* **Retries:** Failed deliveries (a non-2xx status or a network error, for instance) are retried up to **3 times**. Return a **2xx** status the moment you've accepted the payload so ValarAI knows to stop retrying.
-* **Timeout:** Every attempt is capped at **30 seconds**. A timed-out or failed attempt is followed by the next retry.
-* **Best-effort:** A webhook that fails is logged but leaves the response and the API untouched. Even if delivery never succeeds, the response stays reachable through `GET /v1/responses/{response_id}`.
+      response = client.responses.create(
+          model="zai-org/GLM-5.1-FP8",
+          input="Summarize this document.",
+          background=True,
+          metadata={
+              "completion_webhook": "https://app.example.com/hooks/inference-done",
+              "webhook_token": "whk_3f0a9c2e7b14",
+          },
+      )
+      ```
 
-## Full example
+      ```bash theme={null}
+      curl -X POST https://api.valarhq.ai/v1/responses \
+        -H "Authorization: Bearer YOUR_VALAR_API_KEY" \
+        -H "Content-Type: application/json" \
+        -d '{
+          "model": "zai-org/GLM-5.1-FP8",
+          "input": "Summarize this document.",
+          "background": true,
+          "metadata": {
+            "completion_webhook": "https://app.example.com/hooks/inference-done",
+            "webhook_token": "whk_3f0a9c2e7b14"
+          }
+        }'
+      ```
+    </CodeGroup>
+  </Step>
+</Steps>
 
-A complete, end-to-end walkthrough using ngrok:
+## What ValarAI sends
 
-**1. Start a local webhook listener** that echoes the payload and returns 200:
+The callback is a single POST request.
 
-```bash theme={null}
-python -c "
-from http.server import HTTPServer, BaseHTTPRequestHandler; import json
-class H(BaseHTTPRequestHandler):
- def do_POST(self):
-  print(json.dumps(json.loads(self.rfile.read(int(self.headers['Content-Length']))), indent=2))
-  self.send_response(200); self.end_headers()
-HTTPServer(('127.0.0.1', 8765), H).serve_forever()
-"
-```
+<ResponseField name="method" type="POST">
+  Always a POST to the URL in `completion_webhook`.
+</ResponseField>
 
-**2. In a second terminal, expose it with ngrok:**
+<ResponseField name="Content-Type" type="header">
+  `application/json`.
+</ResponseField>
 
-```bash theme={null}
-ngrok http 8765
-```
+<ResponseField name="Authorization" type="header">
+  Present only when `webhook_token` was set. Carries `Bearer <webhook_token>`.
+</ResponseField>
 
-Grab the `https://xxxx.ngrok-free.app` forwarding URL printed in the output.
+<ResponseField name="body" type="object">
+  The full response object, byte-for-byte identical to a `GET /v1/responses/{response_id}` call. The response `id` lives here and is your key for deduplication.
+</ResponseField>
 
-**3. In a third terminal, create a response with the webhook attached:**
+## Delivery semantics
 
-```bash theme={null}
-curl -X POST https://api.valarhq.ai/v1/responses \
-  -H "Authorization: Bearer YOUR_VALAR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "zai-org/GLM-5.1-FP8",
-    "input": "What is 2+2? Reply with just the number.",
-    "background": true,
-    "metadata": {
-      "completion_webhook": "https://xxxx.ngrok-free.app"
-    }
-  }'
-```
+<Warning>
+  The same callback can be delivered more than once. Treat the response `id` in the body as an idempotency key and ignore any `id` you have already processed.
+</Warning>
 
-As soon as the response is done, ValarAI POSTs the full payload to your listener.
+- **Retries.** A delivery that returns a non-2xx status or hits a network error is retried up to **3 times**. Return a **2xx** as soon as you accept the payload to stop the retries.
+- **Timeout.** Each attempt has a **30 second** ceiling. A timeout counts as a failed attempt and triggers the next retry.
+- **Best-effort.** Callbacks are best-effort. A failure is logged but never touches the response record or the API, and the result stays available through `GET /v1/responses/{response_id}` regardless of whether delivery ever succeeded.
+
+## Test it locally with ngrok
+
+You can point a real request at a listener on your own machine.
+
+<Steps>
+  <Step title="Run a listener that prints the body and returns 200">
+    ```bash theme={null}
+    python -c "
+    from http.server import HTTPServer, BaseHTTPRequestHandler; import json
+    class H(BaseHTTPRequestHandler):
+     def do_POST(self):
+      print(json.dumps(json.loads(self.rfile.read(int(self.headers['Content-Length']))), indent=2))
+      self.send_response(200); self.end_headers()
+    HTTPServer(('127.0.0.1', 8765), H).serve_forever()
+    "
+    ```
+  </Step>
+
+  <Step title="Tunnel to it">
+    ```bash theme={null}
+    ngrok http 8765
+    ```
+
+    Copy the `https://xxxx.ngrok-free.app` forwarding URL from the output.
+  </Step>
+
+  <Step title="Submit a request against the tunnel">
+    ```bash theme={null}
+    curl -X POST https://api.valarhq.ai/v1/responses \
+      -H "Authorization: Bearer YOUR_VALAR_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "model": "zai-org/GLM-5.1-FP8",
+        "input": "What is 2+2? Reply with just the number.",
+        "background": true,
+        "metadata": {
+          "completion_webhook": "https://xxxx.ngrok-free.app"
+        }
+      }'
+    ```
+
+    When the response finishes, ValarAI POSTs the full payload to your listener.
+  </Step>
+</Steps>

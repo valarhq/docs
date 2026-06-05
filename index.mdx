@@ -1,12 +1,42 @@
 ---
 title: "Introduction"
-description: "Inference built for long-running agents"
+description: "An inference provider tuned for high-throughput, long-running agent work"
 ---
 
-ValarAI is an inference platform purpose-built for agents that run for extended periods. We optimize for throughput at scale rather than low latency, serving models across large fleets.
+Most inference APIs are designed around a chat box: one short prompt, one fast answer. Agents don't work that way. They run for minutes or hours, fan out across many concurrent requests, and care far more about sustained throughput than about shaving milliseconds off any single call.
 
-Today, ValarAI exposes the [OpenAI Responses API](https://developers.openai.com/api/reference/resources/responses/methods/create) at `/v1/responses`.
+ValarAI is built for that second shape of workload. It serves open models across large fleets and schedules your traffic for aggregate throughput, so a job made of thousands of requests finishes sooner and costs less, even when an individual response takes a little longer to start.
 
-<Card title="Quickstart" icon="rocket" href="/quickstart" horizontal>
-  Make your first API request!
-</Card>
+## How requests work
+
+ValarAI speaks the [OpenAI Responses API](https://developers.openai.com/api/reference/resources/responses/methods/create) at `/v1/responses`, reachable under the base URL `https://api.valarhq.ai/v1`. Any OpenAI-compatible client works once you repoint its base URL and key.
+
+Because agent work is rarely interactive, the API leans on a `background` mode. Send `background: true` and the request returns a response id straight away instead of blocking; you then retrieve that id until the job reports `completed`. Pair that with [completion windows](/completion-windows) to trade latency for price, and you can keep large batches in flight without holding open a connection per request.
+
+<Note>
+  Authenticate with `Authorization: Bearer <key>`. Generate keys from the dashboard at [app.valarhq.ai](https://app.valarhq.ai), and store them in the `VALAR_API_KEY` environment variable so the SDK and OpenAI clients pick them up automatically.
+</Note>
+
+## Where to go next
+
+<Columns cols={2}>
+  <Card title="Quickstart" icon="play" href="/quickstart">
+    Send your first background request in Python or cURL and retrieve the result.
+  </Card>
+
+  <Card title="Build an agent" icon="robot" href="/agents">
+    Run a multi-turn, tool-calling loop on top of the Responses API.
+  </Card>
+
+  <Card title="Models" icon="layer-group" href="/models">
+    The open models ValarAI serves, with their exact checkpoints and capabilities.
+  </Card>
+
+  <Card title="Pricing" icon="tag" href="/pricing">
+    Per-token input, cached, and output rates across every completion window.
+  </Card>
+
+  <Card title="Create a response" icon="code" href="/api-reference/responses-api/create-a-response">
+    Full parameter reference for the endpoint every agent is built on.
+  </Card>
+</Columns>

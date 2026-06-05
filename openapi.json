@@ -3,7 +3,7 @@
   "info": {
     "title": "ValarAI API",
     "version": "2026-02-18",
-    "description": "ValarAI provides OpenAI-compatible Responses and Chat Completions endpoints, plus an Anthropic-compatible Messages endpoint. This reference documents the currently supported subset of fields."
+    "description": "ValarAI exposes Responses and Chat Completions endpoints that match the OpenAI shape, alongside a Messages endpoint that matches the Anthropic shape. This reference covers the fields ValarAI supports today."
   },
   "servers": [
     {
@@ -18,23 +18,23 @@
   "tags": [
     {
       "name": "Models API",
-      "description": "Model discovery endpoints."
+      "description": "Discover which models you can call."
     },
     {
       "name": "Responses API",
-      "description": "OpenAI-compatible Responses API endpoints."
+      "description": "Responses endpoints that follow the OpenAI interface."
     },
     {
       "name": "Chat Completions API",
-      "description": "OpenAI-compatible Chat Completions API endpoints."
+      "description": "Chat Completions endpoints that follow the OpenAI interface."
     },
     {
       "name": "Messages API",
-      "description": "Anthropic-compatible Messages API endpoints."
+      "description": "Messages endpoints that follow the Anthropic interface."
     },
     {
       "name": "Batches API",
-      "description": "Submit and manage batches of requests."
+      "description": "Submit request batches and track their progress."
     }
   ],
   "components": {
@@ -99,11 +99,11 @@
       },
       "RequestMetadata": {
         "type": "object",
-        "description": "Optional string metadata. completion_window controls scheduling; completion_webhook/webhook_token configure completion webhooks.",
+        "description": "Optional string-valued metadata. Use completion_window to influence scheduling, and completion_webhook together with webhook_token to wire up a webhook that fires on completion.",
         "properties": {
           "completion_window": {
             "type": "string",
-            "description": "[Completion window](/completion-windows) (i.e. latency tier) for the request. Support matrix is available on the [Pricing](/pricing) page. When omitted, defaults to `standard` if that window is supported for the model; otherwise `flex` for async requests when the model supports it, and `asap` in all other cases. See [default behavior](/completion-windows#default-behavior).",
+            "description": "The [completion window](/completion-windows), or latency tier, you want for this request. Check the [Pricing](/pricing) page to see which windows each model supports. If you leave it out, ValarAI picks `standard` when the model supports it; otherwise it falls back to `flex` for async requests on models that allow it, and to `asap` everywhere else. See [default behavior](/completion-windows#default-behavior).",
             "enum": [
               "asap",
               "priority",
@@ -193,7 +193,7 @@
       },
       "ResponseInputImagePart": {
         "type": "object",
-        "description": "Image content part. Image input is supported only on multimodal models; see the Models page.",
+        "description": "An image content part. You can only send image input to multimodal models; check the Models page to see which ones qualify.",
         "required": [
           "type",
           "image_url"
@@ -207,7 +207,7 @@
           },
           "image_url": {
             "type": "string",
-            "description": "Public http(s) URL or a base64 data URI (data:<media-type>;base64,<data>)."
+            "description": "Either a publicly reachable http(s) URL or a base64 data URI in the form data:<media-type>;base64,<data>."
           },
           "detail": {
             "type": "string",
@@ -295,7 +295,7 @@
         "additionalProperties": false
       },
       "ResponseInput": {
-        "description": "Text input, plus image input (input_image) on multimodal models. Audio, files, and item references are not currently supported.",
+        "description": "Accepts text, and image input (input_image) when you target a multimodal model. ValarAI does not yet accept audio, files, or item references.",
         "oneOf": [
           {
             "type": "string",
@@ -460,14 +460,14 @@
           },
           "prompt_cache_key": {
             "type": "string",
-            "description": "Optional routing hint for prompt-prefix cache locality. Requests with the same key are preferentially routed to maximize cache hit rates."
+            "description": "An optional hint ValarAI uses to keep prompt-prefix caches local. Requests sharing a key are steered toward the same place so you hit the cache more often."
           },
           "store": {
             "type": "boolean",
             "enum": [
               true
             ],
-            "description": "Only true is supported."
+            "description": "Must be true; no other value is accepted."
           },
           "truncation": {
             "type": "string",
@@ -480,7 +480,7 @@
             "enum": [
               false
             ],
-            "description": "Streaming is not currently supported."
+            "description": "Streaming is not available on this endpoint yet."
           },
           "user": {
             "type": "string",
@@ -724,7 +724,7 @@
       },
       "ChatImageContentPart": {
         "type": "object",
-        "description": "Image content part. Image input is supported only on multimodal models; see the Models page.",
+        "description": "An image content part. You can only send image input to multimodal models; check the Models page to see which ones qualify.",
         "required": [
           "type",
           "image_url"
@@ -744,7 +744,7 @@
             "properties": {
               "url": {
                 "type": "string",
-                "description": "Public http(s) URL or a base64 data URI."
+                "description": "Either a publicly reachable http(s) URL or a base64 data URI."
               },
               "detail": {
                 "type": "string",
@@ -958,7 +958,7 @@
             "enum": [
               1
             ],
-            "description": "Only n=1 is currently supported."
+            "description": "Must be 1; requesting multiple choices is not supported yet."
           },
           "modalities": {
             "type": "array",
@@ -973,15 +973,15 @@
           },
           "stream": {
             "type": "boolean",
-            "description": "When true, the response is returned as a Server-Sent Events stream of chat.completion.chunk objects instead of a single JSON response."
+            "description": "Set this to true to receive the answer as a Server-Sent Events stream of chat.completion.chunk objects rather than one JSON payload."
           },
           "stream_options": {
             "type": "object",
-            "description": "Options that apply when stream is true.",
+            "description": "Settings that only take effect while streaming (stream is true).",
             "properties": {
               "include_usage": {
                 "type": "boolean",
-                "description": "When true, emit a final chunk with token usage for the full request before the [DONE] terminator."
+                "description": "Set this to true to receive one final chunk carrying token usage for the whole request, sent just ahead of the [DONE] terminator."
               }
             },
             "additionalProperties": false
@@ -991,7 +991,7 @@
             "enum": [
               true
             ],
-            "description": "Only true is supported."
+            "description": "Must be true; no other value is accepted."
           },
           "user": {
             "type": "string",
@@ -1238,7 +1238,7 @@
       },
       "ChatCompletionChunk": {
         "type": "object",
-        "description": "One Server-Sent Events chunk emitted when stream: true. The streamed response is a sequence of these chat.completion.chunk objects, each sent as an SSE data: line and terminated by a final data: [DONE] line.",
+        "description": "A single Server-Sent Events chunk produced while stream is true. The full streamed reply arrives as a series of these chat.completion.chunk objects, each delivered on its own SSE data: line, with a closing data: [DONE] line at the end.",
         "required": [
           "id",
           "object",
@@ -1295,7 +1295,7 @@
       },
       "AnthropicImageBlock": {
         "type": "object",
-        "description": "Image content block. Image input is supported only on multimodal models; see the Models page.",
+        "description": "An image content block. You can only send image input to multimodal models; check the Models page to see which ones qualify.",
         "required": [
           "type",
           "source"
@@ -1325,11 +1325,11 @@
                   },
                   "media_type": {
                     "type": "string",
-                    "description": "Image MIME type, e.g. image/jpeg, image/png, image/webp, image/gif."
+                    "description": "The image's MIME type, such as image/jpeg, image/png, image/webp, or image/gif."
                   },
                   "data": {
                     "type": "string",
-                    "description": "Base64-encoded image bytes (no data: prefix)."
+                    "description": "The image bytes encoded as base64, with no data: prefix."
                   }
                 },
                 "additionalProperties": false
@@ -1349,7 +1349,7 @@
                   },
                   "url": {
                     "type": "string",
-                    "description": "Public http(s) URL of the image."
+                    "description": "A publicly reachable http(s) URL pointing to the image."
                   }
                 },
                 "additionalProperties": false
@@ -1473,19 +1473,19 @@
               "type": "object",
               "additionalProperties": true
             },
-            "description": "Accepted for Anthropic SDK compatibility but currently ignored. The model does not receive tools and cannot call them."
+            "description": "Allowed so the Anthropic SDK stays happy, but ValarAI ignores it for now. The model never sees these tools and cannot invoke them."
           },
           "tool_choice": {
             "type": "object",
             "additionalProperties": true,
-            "description": "Accepted for Anthropic SDK compatibility but currently ignored."
+            "description": "Allowed so the Anthropic SDK stays happy, but ValarAI ignores it for now."
           },
           "stream": {
             "type": "boolean",
             "enum": [
               false
             ],
-            "description": "Streaming is not currently supported."
+            "description": "Streaming is not available on this endpoint yet."
           },
           "metadata": {
             "$ref": "#/components/schemas/RequestMetadata"
@@ -1585,11 +1585,11 @@
             "pattern": "^[a-z0-9][a-z0-9_-]*$",
             "minLength": 1,
             "maxLength": 64,
-            "description": "A unique identifier for this request within the batch. Must be lowercase alphanumeric and can include hyphens and underscores. Min 1 character, max 64 characters."
+            "description": "Your own identifier for this request, unique within the batch. Use lowercase letters and digits, optionally with hyphens and underscores, between 1 and 64 characters."
           },
           "params": {
             "type": "object",
-            "description": "The request parameters (same fields as a Responses API request body).",
+            "description": "The parameters for this request, using the same fields you would send in a Responses API request body.",
             "additionalProperties": true
           }
         },
@@ -1607,13 +1607,13 @@
             "enum": [
               "/v1/responses"
             ],
-            "description": "The API endpoint to use for all requests in the batch. Currently only /v1/responses is supported."
+            "description": "Which API endpoint every request in the batch targets. Right now /v1/responses is the only valid choice."
           },
           "requests": {
             "type": "array",
             "minItems": 1,
             "maxItems": 100000,
-            "description": "The list of requests in the batch. Min 1, max 100,000 requests. Total request body must not exceed 256 MB.",
+            "description": "The requests that make up the batch, from 1 up to 100,000 of them. The combined request body has to stay under 256 MB.",
             "items": {
               "$ref": "#/components/schemas/BatchRequestItem"
             }
@@ -1622,7 +1622,7 @@
             "type": "string",
             "pattern": "^[a-zA-Z0-9_-]+$",
             "maxLength": 128,
-            "description": "An optional label for the batch. Must be alphanumeric (hyphens and underscores allowed), max 128 characters."
+            "description": "An optional name for the batch. Use letters and digits, optionally with hyphens and underscores, up to 128 characters."
           }
         },
         "additionalProperties": false
@@ -1637,7 +1637,7 @@
           "type": "string",
           "maxLength": 255
         },
-        "description": "Makes the request retry-safe. ValarAI stores a reservation keyed by (organization, API key, Idempotency-Key); retrying with the same value returns the previously stored response instead of re-running inference. Keys are capped at 255 characters. See [Idempotent Requests](/idempotency) for full semantics."
+        "description": "Lets you retry safely. ValarAI records a reservation under the combination of organization, API key, and Idempotency-Key, so sending the same value again hands back the stored response rather than running inference a second time. Values can be up to 255 characters. See [Idempotent Requests](/idempotency) for the complete rules."
       },
       "AnthropicIdempotencyKey": {
         "name": "anthropic-idempotency-key",
@@ -1647,7 +1647,7 @@
           "type": "string",
           "maxLength": 255
         },
-        "description": "Anthropic-compatible idempotency header. Same semantics as Idempotency-Key; used on the /messages endpoint to match Anthropic's conventions."
+        "description": "The Anthropic-style idempotency header. It behaves exactly like Idempotency-Key and exists on the /messages endpoint so you can keep to Anthropic's naming."
       }
     }
   },
@@ -1658,10 +1658,10 @@
         "tags": [
           "Models API"
         ],
-        "summary": "List supported models",
+        "summary": "List the models you can call",
         "responses": {
           "200": {
-            "description": "List of supported models.",
+            "description": "The models available to you.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1671,7 +1671,7 @@
             }
           },
           "401": {
-            "description": "Authentication error.",
+            "description": "We could not authenticate the request.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1690,7 +1690,7 @@
           "Responses API"
         ],
         "summary": "Create a response",
-        "description": "Creates an OpenAI Responses API task. Returns 202 when background=true, otherwise returns 200 after completion.",
+        "description": "Starts a Responses API task in the OpenAI style. You get back 202 when you pass background=true; otherwise the call returns 200 once the work finishes.",
         "parameters": [
           {
             "$ref": "#/components/parameters/IdempotencyKey"
@@ -1726,7 +1726,7 @@
         },
         "responses": {
           "200": {
-            "description": "Response completed and returned synchronously.",
+            "description": "The response finished and is returned to you right away.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1736,7 +1736,7 @@
             }
           },
           "202": {
-            "description": "Response accepted for asynchronous processing.",
+            "description": "The response was queued and will be processed in the background.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1746,7 +1746,7 @@
             }
           },
           "400": {
-            "description": "Invalid request or unsupported feature.",
+            "description": "Your request was malformed or asked for something ValarAI does not support.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1756,7 +1756,7 @@
             }
           },
           "401": {
-            "description": "Authentication error.",
+            "description": "We could not authenticate the request.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1766,7 +1766,7 @@
             }
           },
           "500": {
-            "description": "Server error.",
+            "description": "Something went wrong on ValarAI's side.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1776,7 +1776,7 @@
             }
           },
           "502": {
-            "description": "Upstream proxy error.",
+            "description": "An upstream service returned an error.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1786,7 +1786,7 @@
             }
           },
           "504": {
-            "description": "Timed out waiting for completion.",
+            "description": "The request timed out before the result was ready.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1804,7 +1804,7 @@
         "tags": [
           "Responses API"
         ],
-        "summary": "Retrieve a response",
+        "summary": "Fetch a response",
         "parameters": [
           {
             "name": "response_id",
@@ -1817,7 +1817,7 @@
         ],
         "responses": {
           "200": {
-            "description": "The response object.",
+            "description": "The requested response object.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1827,7 +1827,7 @@
             }
           },
           "401": {
-            "description": "Authentication error.",
+            "description": "We could not authenticate the request.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1837,7 +1837,7 @@
             }
           },
           "404": {
-            "description": "Response not found.",
+            "description": "No response exists for that ID.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1847,7 +1847,7 @@
             }
           },
           "500": {
-            "description": "Server error.",
+            "description": "Something went wrong on ValarAI's side.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1866,7 +1866,7 @@
           "Chat Completions API"
         ],
         "summary": "Create a chat completion",
-        "description": "OpenAI-compatible Chat Completions endpoint. Supports streaming via stream: true, which returns a Server-Sent Events stream of chat.completion.chunk objects.",
+        "description": "A Chat Completions endpoint that follows the OpenAI interface. Pass stream: true to stream the reply back as Server-Sent Events made up of chat.completion.chunk objects.",
         "parameters": [
           {
             "$ref": "#/components/parameters/IdempotencyKey"
@@ -1898,7 +1898,7 @@
         },
         "responses": {
           "200": {
-            "description": "Chat completion. Returns a single JSON object by default, or a Server-Sent Events stream of chat.completion.chunk objects when stream: true (terminated by a final data: [DONE] line).",
+            "description": "The chat completion. By default this is one JSON object; with stream: true it becomes a Server-Sent Events stream of chat.completion.chunk objects closed by a final data: [DONE] line.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1913,7 +1913,7 @@
             }
           },
           "400": {
-            "description": "Invalid request or unsupported feature.",
+            "description": "Your request was malformed or asked for something ValarAI does not support.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1923,7 +1923,7 @@
             }
           },
           "401": {
-            "description": "Authentication error.",
+            "description": "We could not authenticate the request.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1933,7 +1933,7 @@
             }
           },
           "408": {
-            "description": "Timed out waiting for completion.",
+            "description": "The request timed out before the result was ready.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1943,7 +1943,7 @@
             }
           },
           "500": {
-            "description": "Server error.",
+            "description": "Something went wrong on ValarAI's side.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1961,8 +1961,8 @@
         "tags": [
           "Messages API"
         ],
-        "summary": "Create an Anthropic message",
-        "description": "Anthropic-compatible Messages endpoint. Streaming is not currently supported.",
+        "summary": "Create an Anthropic-style message",
+        "description": "A Messages endpoint that follows the Anthropic interface. Streaming is not available here yet.",
         "parameters": [
           {
             "$ref": "#/components/parameters/AnthropicIdempotencyKey"
@@ -1990,7 +1990,7 @@
         },
         "responses": {
           "200": {
-            "description": "Anthropic-compatible message response.",
+            "description": "A message response shaped to match Anthropic's format.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2000,7 +2000,7 @@
             }
           },
           "400": {
-            "description": "Invalid request or unsupported feature.",
+            "description": "Your request was malformed or asked for something ValarAI does not support.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2010,7 +2010,7 @@
             }
           },
           "401": {
-            "description": "Authentication error.",
+            "description": "We could not authenticate the request.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2020,7 +2020,7 @@
             }
           },
           "408": {
-            "description": "Timed out waiting for completion.",
+            "description": "The request timed out before the result was ready.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2030,7 +2030,7 @@
             }
           },
           "500": {
-            "description": "Server error.",
+            "description": "Something went wrong on ValarAI's side.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2049,7 +2049,7 @@
           "Batches API"
         ],
         "summary": "Create a batch",
-        "description": "Submit a batch of requests for asynchronous processing.",
+        "description": "Send a group of requests for ValarAI to process in the background.",
         "parameters": [
           {
             "$ref": "#/components/parameters/IdempotencyKey"
@@ -2099,7 +2099,7 @@
         },
         "responses": {
           "200": {
-            "description": "Batch created.",
+            "description": "The batch was created.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2112,19 +2112,19 @@
                   "properties": {
                     "id": {
                       "type": "string",
-                      "description": "Unique identifier for the batch."
+                      "description": "The batch's unique ID."
                     },
                     "request_counts": {
                       "type": "integer",
-                      "description": "Total number of requests in the batch."
+                      "description": "How many requests the batch contains."
                     },
                     "created_at": {
                       "type": "integer",
-                      "description": "Unix timestamp of when the batch was created."
+                      "description": "When the batch was created, as a Unix timestamp."
                     },
                     "label": {
                       "type": "string",
-                      "description": "The label for the batch, if provided."
+                      "description": "The label you gave the batch, when one was set."
                     }
                   }
                 },
@@ -2138,7 +2138,7 @@
             }
           },
           "400": {
-            "description": "Invalid request.",
+            "description": "The request was malformed.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2148,7 +2148,7 @@
             }
           },
           "401": {
-            "description": "Authentication error.",
+            "description": "We could not authenticate the request.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2158,7 +2158,7 @@
             }
           },
           "500": {
-            "description": "Server error.",
+            "description": "Something went wrong on ValarAI's side.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2175,7 +2175,7 @@
           "Batches API"
         ],
         "summary": "List batches",
-        "description": "List batches with optional pagination.",
+        "description": "Retrieve your batches, paging through them when you need to.",
         "parameters": [
           {
             "name": "after_id",
@@ -2184,7 +2184,7 @@
             "schema": {
               "type": "string"
             },
-            "description": "Return batches created after this batch ID."
+            "description": "Only return batches created after this batch ID."
           },
           {
             "name": "before_id",
@@ -2193,7 +2193,7 @@
             "schema": {
               "type": "string"
             },
-            "description": "Return batches created before this batch ID."
+            "description": "Only return batches created before this batch ID."
           },
           {
             "name": "limit",
@@ -2205,12 +2205,12 @@
               "minimum": 1,
               "maximum": 200
             },
-            "description": "Maximum number of batches to return. Min 1, defaults to 25, max 200."
+            "description": "How many batches to return at most. Ranges from 1 to 200 and defaults to 25."
           }
         ],
         "responses": {
           "200": {
-            "description": "List of batches.",
+            "description": "Your batches.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2225,19 +2225,19 @@
                     "properties": {
                       "id": {
                         "type": "string",
-                        "description": "Unique identifier for the batch."
+                        "description": "The batch's unique ID."
                       },
                       "request_counts": {
                         "type": "integer",
-                        "description": "Total number of requests in the batch."
+                        "description": "How many requests the batch contains."
                       },
                       "created_at": {
                         "type": "integer",
-                        "description": "Unix timestamp of when the batch was created."
+                        "description": "When the batch was created, as a Unix timestamp."
                       },
                       "label": {
                         "type": "string",
-                        "description": "The label for the batch, if provided."
+                        "description": "The label you gave the batch, when one was set."
                       }
                     }
                   }
@@ -2254,7 +2254,7 @@
             }
           },
           "400": {
-            "description": "Invalid request.",
+            "description": "The request was malformed.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2264,7 +2264,7 @@
             }
           },
           "401": {
-            "description": "Authentication error.",
+            "description": "We could not authenticate the request.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2274,7 +2274,7 @@
             }
           },
           "500": {
-            "description": "Server error.",
+            "description": "Something went wrong on ValarAI's side.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2292,8 +2292,8 @@
         "tags": [
           "Batches API"
         ],
-        "summary": "Get batch status",
-        "description": "Retrieve the current status of a batch.",
+        "summary": "Check batch status",
+        "description": "See where a batch currently stands.",
         "parameters": [
           {
             "name": "batch_id",
@@ -2306,7 +2306,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Returns the current status of a batch.",
+            "description": "The batch's current status.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2320,23 +2320,23 @@
                   "properties": {
                     "id": {
                       "type": "string",
-                      "description": "Unique identifier for the batch."
+                      "description": "The batch's unique ID."
                     },
                     "request_counts": {
                       "type": "integer",
-                      "description": "Total number of requests in the batch."
+                      "description": "How many requests the batch contains."
                     },
                     "created_at": {
                       "type": "integer",
-                      "description": "Unix timestamp of when the batch was created."
+                      "description": "When the batch was created, as a Unix timestamp."
                     },
                     "label": {
                       "type": "string",
-                      "description": "The label for the batch, if provided."
+                      "description": "The label you gave the batch, when one was set."
                     },
                     "request_status": {
                       "type": "object",
-                      "description": "A map of custom_id to its current status.",
+                      "description": "Maps each custom_id to where that request currently stands.",
                       "additionalProperties": {
                         "type": "object",
                         "required": [
@@ -2369,7 +2369,7 @@
             }
           },
           "400": {
-            "description": "Invalid request.",
+            "description": "The request was malformed.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2379,7 +2379,7 @@
             }
           },
           "401": {
-            "description": "Authentication error.",
+            "description": "We could not authenticate the request.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2389,7 +2389,7 @@
             }
           },
           "404": {
-            "description": "Batch not found.",
+            "description": "No batch exists for that ID.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2399,7 +2399,7 @@
             }
           },
           "500": {
-            "description": "Server error.",
+            "description": "Something went wrong on ValarAI's side.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2417,8 +2417,8 @@
         "tags": [
           "Batches API"
         ],
-        "summary": "Get batch request result",
-        "description": "Retrieve the result of a specific request within a batch by its custom_id.",
+        "summary": "Get a single batch request result",
+        "description": "Pull back the result for one request in a batch, looked up by its custom_id.",
         "parameters": [
           {
             "name": "batch_id",
@@ -2427,7 +2427,7 @@
             "schema": {
               "type": "string"
             },
-            "description": "The ID of the batch."
+            "description": "The batch's ID."
           },
           {
             "name": "custom_id",
@@ -2436,12 +2436,12 @@
             "schema": {
               "type": "string"
             },
-            "description": "The custom_id of the request within the batch."
+            "description": "The custom_id identifying the request inside the batch."
           }
         ],
         "responses": {
           "200": {
-            "description": "The response object for the given request.",
+            "description": "The response object for that request.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2451,7 +2451,7 @@
             }
           },
           "400": {
-            "description": "Invalid request.",
+            "description": "The request was malformed.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2461,7 +2461,7 @@
             }
           },
           "401": {
-            "description": "Authentication error.",
+            "description": "We could not authenticate the request.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2471,7 +2471,7 @@
             }
           },
           "404": {
-            "description": "Batch or request not found.",
+            "description": "No matching batch or request was found.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2481,7 +2481,7 @@
             }
           },
           "500": {
-            "description": "Server error.",
+            "description": "Something went wrong on ValarAI's side.",
             "content": {
               "application/json": {
                 "schema": {
