@@ -9,7 +9,7 @@ ValarAI optimizes for throughput and cost per token, not the latency of one turn
 
 Pass `metadata.completion_window` on the request:
 
-```py theme={null}
+```py
 response = client.responses.create(
     model="zai-org/GLM-5.1-FP8",
     input="Explain the key ideas behind transformers.",
@@ -25,7 +25,7 @@ Accepted values are `"asap"`, `"priority"`, `"standard"`, and `"flex"`.
 ## The four tiers
 
 | Window | Avg. turn time | Price vs `asap` | Best for |
-| ------ | -------------- | --------------- | -------- |
+| --- | --- | --- | --- |
 | `asap` | Immediate | — | Interactive UIs, human-in-the-loop |
 | `priority` | ~1 min | ~50% lower | Latency-sensitive agent loops |
 | `standard` | ~5 min | ~65% lower | Cost-optimized agents |
@@ -39,13 +39,13 @@ Each model-and-window price pairing is listed on the [Pricing](/pricing) page.
 
 ## How each tier behaves
 
-**`asap`** runs immediately on the fastest hardware in a latency-optimized setup. ValarAI does not focus its optimization here; the tier exists as a convenience and is priced in line with other model API providers.
+`asap` runs immediately on the fastest hardware in a latency-optimized setup. ValarAI does not focus its optimization here; the tier exists as a convenience and is priced in line with other model API providers.
 
-**`priority`** is the most tightly scheduled tier. For a higher per-token rate it targets a lower average turn time than `standard` — roughly 1 minute against `standard`'s ~5 on a balanced workload. Use it for latency-sensitive agent loops where one turn feeds the next and several extra minutes per turn would noticeably stretch the whole trajectory.
+`priority` is the most tightly scheduled tier. For a higher per-token rate it targets a lower average turn time than `standard` — roughly 1 minute against `standard`'s ~5 on a balanced workload. Use it for latency-sensitive agent loops where one turn feeds the next and several extra minutes per turn would noticeably stretch the whole trajectory.
 
-**`standard`** is the default wherever a model supports it. It runs on ValarAI's maximum-efficiency serving stack and targets roughly a five-minute average turn time across a balanced workload. Most of ValarAI's published prices reference this window.
+`standard` is the default wherever a model supports it. It runs on ValarAI's maximum-efficiency serving stack and targets roughly a five-minute average turn time across a balanced workload. Most of ValarAI's published prices reference this window.
 
-**`flex`** runs your work whenever compute is cheapest — overnight or off-peak — with no response-time target. It fits batch and non-agentic jobs.
+`flex` runs your work whenever compute is cheapest — overnight or off-peak — with no response-time target. It fits batch and non-agentic jobs.
 
 <Warning>
   `flex` requires `background=True`.
@@ -53,7 +53,7 @@ Each model-and-window price pairing is listed on the [Pricing](/pricing) page.
 
 ## What happens by default
 
-Leave `completion_window` off and the request defaults to `standard`. When `standard` is not <a href="/pricing">available</a> for the chosen model, <Tooltip tip="Responses API with `background=True`, or the Batch API">async</Tooltip> requests fall back to `flex` where it exists, and <Tooltip tip="Responses without `background=True`, Chat Completions, Messages, or async requests using models without `flex` available">every other request</Tooltip> falls back to `asap`.
+Leave `completion_window` off and the request defaults to `standard`. When `standard` is not  for the chosen model, <Tooltip tip="Responses API with `background=True`, or the Batch API">async</Tooltip> requests fall back to `flex` where it exists, and <Tooltip tip="Responses without `background=True`, Chat Completions, Messages, or async requests using models without `flex` available">every other request</Tooltip> falls back to `asap`.
 
 <Warning>
   Explicitly choosing a window the model does not support fails with `400 invalid_request_error`. The error message lists the model's supported windows, and the [Pricing](/pricing) page keeps a current support matrix.

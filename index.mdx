@@ -1,11 +1,11 @@
 ---
 title: "Introduction"
-description: "An inference provider tuned for high-throughput, long-running agent work"
+description: "The inference provider tuned for high-throughput agentic work"
 ---
 
-Most inference APIs are designed around a chat box: one short prompt, one fast answer. Agents don't work that way. They run for minutes or hours, fan out across many concurrent requests, and care far more about sustained throughput than about shaving milliseconds off any single call.
+Most inference APIs were built for chat: one prompt, one response, optimized for the latency of a single call.
 
-ValarAI is built for that second shape of workload. It serves open models across large fleets and schedules your traffic for aggregate throughput, so a job made of thousands of requests finishes sooner and costs less, even when an individual response takes a little longer to start.
+But a growing share of AI work is asynchronous. Agents, batch jobs, labeling, data extraction, document processing, evaluation, and background workflows often run across hundreds or thousands of model calls. For these workloads, the goal is not the fastest first token - it is finishing the full job reliably, efficiently, and at the lowest possible cost.
 
 ## How requests work
 
@@ -19,24 +19,8 @@ Because agent work is rarely interactive, the API leans on a `background` mode. 
 
 ## Where to go next
 
-<Columns cols={2}>
-  <Card title="Quickstart" icon="play" href="/quickstart">
-    Send your first background request in Python or cURL and retrieve the result.
-  </Card>
-
-  <Card title="Build an agent" icon="robot" href="/agents">
-    Run a multi-turn, tool-calling loop on top of the Responses API.
-  </Card>
-
-  <Card title="Models" icon="layer-group" href="/models">
-    The open models ValarAI serves, with their exact checkpoints and capabilities.
-  </Card>
-
-  <Card title="Pricing" icon="tag" href="/pricing">
-    Per-token input, cached, and output rates across every completion window.
-  </Card>
-
-  <Card title="Create a response" icon="code" href="/api-reference/responses-api/create-a-response">
-    Full parameter reference for the endpoint every agent is built on.
+<Columns cols={1}>
+  <Card title="Quickstart" icon="play" horizontal href="/quickstart">
+    Make your first API request with Valar
   </Card>
 </Columns>

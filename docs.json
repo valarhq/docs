@@ -43,32 +43,51 @@
   "navigation": {
     "tabs": [
       {
-        "tab": "Guides",
-        "groups": [
+        "tab": "Documentation",
+        "menu": [
           {
-            "group": "Start here",
+            "item": "Getting started",
             "icon": "flag",
-            "pages": ["index", "quickstart", "models", "pricing"]
+            "pages": [
+              "index",
+              "quickstart",
+              "models",
+              "pricing"
+            ]
           },
           {
-            "group": "Build agents",
+            "item": "Build agents",
             "icon": "robot",
-            "pages": ["agents", "requests_at_scale", "opencode"]
+            "pages": [
+              "agents",
+              "requests_at_scale",
+              "opencode"
+            ]
           },
           {
-            "group": "Inputs and adapters",
+            "item": "Inputs and adapters",
             "icon": "layer-group",
-            "pages": ["images", "loras"]
+            "pages": [
+              "images",
+              "loras"
+            ]
           },
           {
-            "group": "Run in production",
+            "item": "Run in production",
             "icon": "gauge-high",
-            "pages": ["completion-windows", "webhooks", "idempotency"]
+            "pages": [
+              "completion-windows",
+              "webhooks",
+              "idempotency"
+            ]
           },
           {
-            "group": "Platform",
+            "item": "Platform",
             "icon": "shield-halved",
-            "pages": ["support", "dpa"]
+            "pages": [
+              "support",
+              "dpa"
+            ]
           }
         ]
       },

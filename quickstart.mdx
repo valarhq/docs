@@ -1,138 +1,82 @@
 ---
 title: "Quickstart"
-description: "Dispatch your first background agent task and read back the result"
+description: "Start using Valar with OpenAI clients"
 ---
-
-This walkthrough runs one realistic task end to end: classifying an inbound support ticket and drafting a reply. You send it as a background job, then retrieve the result once ValarAI finishes. The same pattern scales from this single call to the thousands of concurrent requests an agent fans out at runtime.
 
 The endpoint is the [OpenAI Responses API](/api-reference/responses-api/create-a-response) at `/v1/responses`, so any OpenAI-compatible client works after you change two settings: the base URL and the key.
 
+This walkthrough runs one realistic task end to end: classifying an inbound support ticket and drafting a reply. You send it as a background job, then retrieve the result once ValarAI finishes. The same pattern scales from this single call to the thousands of concurrent requests an agent fans out at runtime.
+
 <Steps>
   <Step title="Create an API key">
-    Sign in at [app.valarhq.ai](https://app.valarhq.ai) and create a key from the dashboard. Export it so both the OpenAI clients and the ValarAI SDK pick it up without extra configuration:
-
-    ```bash theme={null}
-    export VALAR_API_KEY=sk_live_your_key_here
-    ```
+    Sign in at [app.valarhq.ai](https://app.valarhq.ai) and create a key from the dashboard.
   </Step>
-
-  <Step title="Point your client at ValarAI">
-    Set the base URL to `https://api.valarhq.ai/v1` and pass your key as a bearer token. Nothing else about the OpenAI client changes.
+  <Step title="Point at Valar ">
+    Install the OpenAI SDK and point it at Valar. Set the base URL to `https://api.valarhq.ai/v1` and pass your key as a bearer token. Nothing else about the OpenAI client changes. 
   </Step>
-
   <Step title="Dispatch the task in the background">
     Setting `background` returns a response id immediately rather than holding the connection open. For one ticket this is convenient; across a queue of them it is what lets the work run concurrently. Use a model from the [Models](/models) page — here, `zai-org/GLM-5.1-FP8`.
 
-    <CodeGroup>
-      ```python theme={null}
-      from openai import OpenAI
-
-      client = OpenAI(
-          base_url="https://api.valarhq.ai/v1",
-          api_key="YOUR_VALAR_API_KEY",  # or read VALAR_API_KEY from the environment
-      )
-
-      ticket = (
-          "Subject: Charged twice this month\n"
-          "I see two identical $49 charges on the 3rd. Can you refund one and "
-          "tell me why it happened?"
-      )
-
-      started = client.responses.create(
-          model="zai-org/GLM-5.1-FP8",
-          instructions=(
-              "You are a support triage agent. Classify the ticket as one of "
-              "billing, technical, or account, then draft a short reply."
-          ),
-          input=ticket,
-          background=True,  # returns a response id right away
-      )
-
-      print("Queued:", started.id)
-      ```
-
-      ```bash theme={null}
-      curl https://api.valarhq.ai/v1/responses \
-        -H "Authorization: Bearer $VALAR_API_KEY" \
-        -H "Content-Type: application/json" \
-        -d '{
-          "model": "zai-org/GLM-5.1-FP8",
-          "instructions": "You are a support triage agent. Classify the ticket as one of billing, technical, or account, then draft a short reply.",
-          "input": "Subject: Charged twice this month\nI see two identical $49 charges on the 3rd. Can you refund one and tell me why it happened?",
-          "background": true
-        }'
-      ```
-
-      ```typescript theme={null}
-      import OpenAI from "openai";
-
-      const client = new OpenAI({
-        baseURL: "https://api.valarhq.ai/v1",
-        apiKey: process.env.VALAR_API_KEY,
-      });
-
-      const ticket =
-        "Subject: Charged twice this month\n" +
-        "I see two identical $49 charges on the 3rd. Can you refund one and " +
-        "tell me why it happened?";
-
-      const started = await client.responses.create({
-        model: "zai-org/GLM-5.1-FP8",
-        instructions:
-          "You are a support triage agent. Classify the ticket as one of " +
-          "billing, technical, or account, then draft a short reply.",
-        input: ticket,
-        background: true, // returns a response id right away
-      });
-
-      console.log("Queued:", started.id);
-      ```
-    </CodeGroup>
+    ```python
+    from openai import OpenAI
+    
+    client = OpenAI(
+        base_url="https://api.valarhq.ai/v1",
+        api_key="YOUR_VALAR_API_KEY",  # or read VALAR_API_KEY from the environment
+    )
+    
+    ticket = (
+        "Subject: Charged twice this month\n"
+        "I see two identical $49 charges on the 3rd. Can you refund one and "
+        "tell me why it happened?"
+    )
+    
+    started = client.responses.create(
+        model="zai-org/GLM-5.1-FP8",
+        instructions=(
+            "You are a support triage agent. Classify the ticket as one of "
+            "billing, technical, or account, then draft a short reply."
+        ),
+        input=ticket,
+        background=True,  # returns a response id right away
+    )
+    
+    print("Queued:", started.id)
+    ```
   </Step>
+  <Step title="Retrieve the request">
+    The create call hands back a response id and a status of `queued` or `in_progress`. Retrieve that id until it reaches `completed`, then read `output_text`. In production you would replace this poll loop with a [webhook](/webhooks) so you aren't holding a thread per job.
 
+    ```python
+    import time
+    
+    response = started
+    while response.status in {"queued", "in_progress"}:
+        time.sleep(2)
+        response = client.responses.retrieve(response.id)
+    
+    if response.status != "completed":
+        raise RuntimeError(f"Task ended as {response.status}")
+    
+    print(response.output_text)
+    ```
+  </Step>
   <Step title="Retrieve the result">
     The create call hands back a response id and a status of `queued` or `in_progress`. Retrieve that id until it reaches `completed`, then read `output_text`. In production you would replace this poll loop with a [webhook](/webhooks) so you aren't holding a thread per job.
 
-    <CodeGroup>
-      ```python theme={null}
-      import time
-
-      response = started
-      while response.status in {"queued", "in_progress"}:
-          time.sleep(2)
-          response = client.responses.retrieve(response.id)
-
-      if response.status != "completed":
-          raise RuntimeError(f"Task ended as {response.status}")
-
-      print(response.output_text)
-      ```
-
-      ```bash theme={null}
-      URL="https://api.valarhq.ai/v1/responses/RESPONSE_ID"
-
-      until [ "$(curl -s "$URL" \
-        -H "Authorization: Bearer $VALAR_API_KEY" | jq -r '.status')" = "completed" ]; do
-        sleep 2
-      done
-
-      curl -s "$URL" -H "Authorization: Bearer $VALAR_API_KEY" | jq -r '.output_text'
-      ```
-
-      ```typescript theme={null}
-      let response = started;
-      while (["queued", "in_progress"].includes(response.status)) {
-        await new Promise((r) => setTimeout(r, 2000));
-        response = await client.responses.retrieve(response.id);
-      }
-
-      if (response.status !== "completed") {
-        throw new Error(`Task ended as ${response.status}`);
-      }
-
-      console.log(response.output_text);
-      ```
-    </CodeGroup>
+    ```python
+    import time
+    
+    response = started
+    while response.status in {"queued", "in_progress"}:
+        time.sleep(2)
+        response = client.responses.retrieve(response.id)
+    
+    if response.status != "completed":
+        raise RuntimeError(f"Task ended as {response.status}")
+    
+    print(response.output_text)
+    ```
   </Step>
 </Steps>
 
@@ -140,8 +84,8 @@ The endpoint is the [OpenAI Responses API](/api-reference/responses-api/create-a
 
 A single triaged ticket is the unit; an agent is many of them in a loop. From here:
 
-- Turn this into a tool-using agent that looks up the customer's billing record before replying — see [Building a tool-calling agent](/agents).
+- See [**Models**](/models) for the full list of supported models, and [**Pricing**](/pricing) for per-token rates.
+- Turn this into a tool-using agent that looks up the customer's billing record before replying - see [Building a tool-calling agent](/agents).
 - Run the same task over a backlog of tickets at once with [Requests at scale](/requests_at_scale), choosing a [completion window](/completion-windows) per the latency you can tolerate.
-- Instrument the run so you can inspect every step with the [ValarAI SDK and Traces](/sdk-introduction).
 
 Questions about a specific workload can go to [support@valarhq.ai](mailto:support@valarhq.ai).

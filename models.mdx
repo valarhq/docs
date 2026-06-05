@@ -1,17 +1,9 @@
 ---
 title: "Models"
-description: "The open-weight models you can run on ValarAI and how to pick one"
+description: "All models currently served by Valar
+
+"
 ---
-
-## Pick a model by what you need
-
-Start from the capability you can't do without, then narrow down:
-
-* **You need to pass images.** Reach for a multimodal checkpoint. Kimi-K2.6 and both Gemma 4 31B IT builds accept image input; the rest are text-only.
-* **You want to attach a LoRA adapter.** Kimi-K2.6 is the only model that serves [LoRA](/loras) adapters today.
-* **You want the model to reason before answering.** Every model on ValarAI supports reasoning, so this rarely constrains your choice.
-
-Once you've matched the capability, weigh size and cost. The smaller Gemma 4 31B IT builds are a fit for high-volume, latency-sensitive traffic, while DeepSeek V4 Pro and Kimi-K2.6 sit at the frontier end. Per-token rates for each model and completion window are on the [Pricing](/pricing) page.
 
 ## What ships in the table
 
@@ -79,36 +71,36 @@ Each row maps a model to the exact Hugging Face checkpoint ValarAI serves, along
               className="cap-copy-btn"
               aria-label="Copy moonshotai/Kimi-K2.6"
               onClick={(e) => {
-            const b = e.currentTarget;
-            const t = "moonshotai/Kimi-K2.6";
-            const ok = () => {
-              b.classList.add("cap-copy-done");
-              setTimeout(() => b.classList.remove("cap-copy-done"), 1500);
-            };
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-              navigator.clipboard
-                .writeText(t)
-                .then(ok)
-                .catch(() => fallback(b, t, ok));
-            } else {
-              fallback(b, t, ok);
+          const b = e.currentTarget;
+          const t = "moonshotai/Kimi-K2.6";
+          const ok = () => {
+            b.classList.add("cap-copy-done");
+            setTimeout(() => b.classList.remove("cap-copy-done"), 1500);
+          };
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard
+              .writeText(t)
+              .then(ok)
+              .catch(() => fallback(b, t, ok));
+          } else {
+            fallback(b, t, ok);
+          }
+          function fallback(_b, _t, _ok) {
+            const ta = document.createElement("textarea");
+            ta.value = _t;
+            ta.style.position = "absolute";
+            ta.style.left = "-9999px";
+            document.body.appendChild(ta);
+            ta.select();
+            try {
+              document.execCommand("copy");
+              _ok();
+            } catch (_) {
+              _ok();
             }
-            function fallback(_b, _t, _ok) {
-              const ta = document.createElement("textarea");
-              ta.value = _t;
-              ta.style.position = "absolute";
-              ta.style.left = "-9999px";
-              document.body.appendChild(ta);
-              ta.select();
-              try {
-                document.execCommand("copy");
-                _ok();
-              } catch (_) {
-                _ok();
-              }
-              document.body.removeChild(ta);
-            }
-          }}
+            document.body.removeChild(ta);
+          }
+        }}
             >
               <span className="cap-copy-icon-wrap">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="cap-copy-icon cap-copy-icon-default" aria-hidden="true">
@@ -175,36 +167,36 @@ Each row maps a model to the exact Hugging Face checkpoint ValarAI serves, along
               className="cap-copy-btn"
               aria-label="Copy zai-org/GLM-5.1-FP8"
               onClick={(e) => {
-            const b = e.currentTarget;
-            const t = "zai-org/GLM-5.1-FP8";
-            const ok = () => {
-              b.classList.add("cap-copy-done");
-              setTimeout(() => b.classList.remove("cap-copy-done"), 1500);
-            };
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-              navigator.clipboard
-                .writeText(t)
-                .then(ok)
-                .catch(() => fallback(b, t, ok));
-            } else {
-              fallback(b, t, ok);
+          const b = e.currentTarget;
+          const t = "zai-org/GLM-5.1-FP8";
+          const ok = () => {
+            b.classList.add("cap-copy-done");
+            setTimeout(() => b.classList.remove("cap-copy-done"), 1500);
+          };
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard
+              .writeText(t)
+              .then(ok)
+              .catch(() => fallback(b, t, ok));
+          } else {
+            fallback(b, t, ok);
+          }
+          function fallback(_b, _t, _ok) {
+            const ta = document.createElement("textarea");
+            ta.value = _t;
+            ta.style.position = "absolute";
+            ta.style.left = "-9999px";
+            document.body.appendChild(ta);
+            ta.select();
+            try {
+              document.execCommand("copy");
+              _ok();
+            } catch (_) {
+              _ok();
             }
-            function fallback(_b, _t, _ok) {
-              const ta = document.createElement("textarea");
-              ta.value = _t;
-              ta.style.position = "absolute";
-              ta.style.left = "-9999px";
-              document.body.appendChild(ta);
-              ta.select();
-              try {
-                document.execCommand("copy");
-                _ok();
-              } catch (_) {
-                _ok();
-              }
-              document.body.removeChild(ta);
-            }
-          }}
+            document.body.removeChild(ta);
+          }
+        }}
             >
               <span className="cap-copy-icon-wrap">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="cap-copy-icon cap-copy-icon-default" aria-hidden="true">
@@ -263,36 +255,36 @@ Each row maps a model to the exact Hugging Face checkpoint ValarAI serves, along
               className="cap-copy-btn"
               aria-label="Copy openai/gpt-oss-120b"
               onClick={(e) => {
-            const b = e.currentTarget;
-            const t = "openai/gpt-oss-120b";
-            const ok = () => {
-              b.classList.add("cap-copy-done");
-              setTimeout(() => b.classList.remove("cap-copy-done"), 1500);
-            };
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-              navigator.clipboard
-                .writeText(t)
-                .then(ok)
-                .catch(() => fallback(b, t, ok));
-            } else {
-              fallback(b, t, ok);
+          const b = e.currentTarget;
+          const t = "openai/gpt-oss-120b";
+          const ok = () => {
+            b.classList.add("cap-copy-done");
+            setTimeout(() => b.classList.remove("cap-copy-done"), 1500);
+          };
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard
+              .writeText(t)
+              .then(ok)
+              .catch(() => fallback(b, t, ok));
+          } else {
+            fallback(b, t, ok);
+          }
+          function fallback(_b, _t, _ok) {
+            const ta = document.createElement("textarea");
+            ta.value = _t;
+            ta.style.position = "absolute";
+            ta.style.left = "-9999px";
+            document.body.appendChild(ta);
+            ta.select();
+            try {
+              document.execCommand("copy");
+              _ok();
+            } catch (_) {
+              _ok();
             }
-            function fallback(_b, _t, _ok) {
-              const ta = document.createElement("textarea");
-              ta.value = _t;
-              ta.style.position = "absolute";
-              ta.style.left = "-9999px";
-              document.body.appendChild(ta);
-              ta.select();
-              try {
-                document.execCommand("copy");
-                _ok();
-              } catch (_) {
-                _ok();
-              }
-              document.body.removeChild(ta);
-            }
-          }}
+            document.body.removeChild(ta);
+          }
+        }}
             >
               <span className="cap-copy-icon-wrap">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="cap-copy-icon cap-copy-icon-default" aria-hidden="true">
@@ -351,36 +343,36 @@ Each row maps a model to the exact Hugging Face checkpoint ValarAI serves, along
               className="cap-copy-btn"
               aria-label="Copy google/gemma-4-31B-it"
               onClick={(e) => {
-            const b = e.currentTarget;
-            const t = "google/gemma-4-31B-it";
-            const ok = () => {
-              b.classList.add("cap-copy-done");
-              setTimeout(() => b.classList.remove("cap-copy-done"), 1500);
-            };
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-              navigator.clipboard
-                .writeText(t)
-                .then(ok)
-                .catch(() => fallback(b, t, ok));
-            } else {
-              fallback(b, t, ok);
+          const b = e.currentTarget;
+          const t = "google/gemma-4-31B-it";
+          const ok = () => {
+            b.classList.add("cap-copy-done");
+            setTimeout(() => b.classList.remove("cap-copy-done"), 1500);
+          };
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard
+              .writeText(t)
+              .then(ok)
+              .catch(() => fallback(b, t, ok));
+          } else {
+            fallback(b, t, ok);
+          }
+          function fallback(_b, _t, _ok) {
+            const ta = document.createElement("textarea");
+            ta.value = _t;
+            ta.style.position = "absolute";
+            ta.style.left = "-9999px";
+            document.body.appendChild(ta);
+            ta.select();
+            try {
+              document.execCommand("copy");
+              _ok();
+            } catch (_) {
+              _ok();
             }
-            function fallback(_b, _t, _ok) {
-              const ta = document.createElement("textarea");
-              ta.value = _t;
-              ta.style.position = "absolute";
-              ta.style.left = "-9999px";
-              document.body.appendChild(ta);
-              ta.select();
-              try {
-                document.execCommand("copy");
-                _ok();
-              } catch (_) {
-                _ok();
-              }
-              document.body.removeChild(ta);
-            }
-          }}
+            document.body.removeChild(ta);
+          }
+        }}
             >
               <span className="cap-copy-icon-wrap">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="cap-copy-icon cap-copy-icon-default" aria-hidden="true">
@@ -443,36 +435,36 @@ Each row maps a model to the exact Hugging Face checkpoint ValarAI serves, along
               className="cap-copy-btn"
               aria-label="Copy nvidia/Gemma-4-31B-IT-NVFP4"
               onClick={(e) => {
-            const b = e.currentTarget;
-            const t = "nvidia/Gemma-4-31B-IT-NVFP4";
-            const ok = () => {
-              b.classList.add("cap-copy-done");
-              setTimeout(() => b.classList.remove("cap-copy-done"), 1500);
-            };
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-              navigator.clipboard
-                .writeText(t)
-                .then(ok)
-                .catch(() => fallback(b, t, ok));
-            } else {
-              fallback(b, t, ok);
+          const b = e.currentTarget;
+          const t = "nvidia/Gemma-4-31B-IT-NVFP4";
+          const ok = () => {
+            b.classList.add("cap-copy-done");
+            setTimeout(() => b.classList.remove("cap-copy-done"), 1500);
+          };
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard
+              .writeText(t)
+              .then(ok)
+              .catch(() => fallback(b, t, ok));
+          } else {
+            fallback(b, t, ok);
+          }
+          function fallback(_b, _t, _ok) {
+            const ta = document.createElement("textarea");
+            ta.value = _t;
+            ta.style.position = "absolute";
+            ta.style.left = "-9999px";
+            document.body.appendChild(ta);
+            ta.select();
+            try {
+              document.execCommand("copy");
+              _ok();
+            } catch (_) {
+              _ok();
             }
-            function fallback(_b, _t, _ok) {
-              const ta = document.createElement("textarea");
-              ta.value = _t;
-              ta.style.position = "absolute";
-              ta.style.left = "-9999px";
-              document.body.appendChild(ta);
-              ta.select();
-              try {
-                document.execCommand("copy");
-                _ok();
-              } catch (_) {
-                _ok();
-              }
-              document.body.removeChild(ta);
-            }
-          }}
+            document.body.removeChild(ta);
+          }
+        }}
             >
               <span className="cap-copy-icon-wrap">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="cap-copy-icon cap-copy-icon-default" aria-hidden="true">
@@ -535,36 +527,36 @@ Each row maps a model to the exact Hugging Face checkpoint ValarAI serves, along
               className="cap-copy-btn"
               aria-label="Copy deepseek-ai/DeepSeek-V4-Pro"
               onClick={(e) => {
-            const b = e.currentTarget;
-            const t = "deepseek-ai/DeepSeek-V4-Pro";
-            const ok = () => {
-              b.classList.add("cap-copy-done");
-              setTimeout(() => b.classList.remove("cap-copy-done"), 1500);
-            };
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-              navigator.clipboard
-                .writeText(t)
-                .then(ok)
-                .catch(() => fallback(b, t, ok));
-            } else {
-              fallback(b, t, ok);
+          const b = e.currentTarget;
+          const t = "deepseek-ai/DeepSeek-V4-Pro";
+          const ok = () => {
+            b.classList.add("cap-copy-done");
+            setTimeout(() => b.classList.remove("cap-copy-done"), 1500);
+          };
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard
+              .writeText(t)
+              .then(ok)
+              .catch(() => fallback(b, t, ok));
+          } else {
+            fallback(b, t, ok);
+          }
+          function fallback(_b, _t, _ok) {
+            const ta = document.createElement("textarea");
+            ta.value = _t;
+            ta.style.position = "absolute";
+            ta.style.left = "-9999px";
+            document.body.appendChild(ta);
+            ta.select();
+            try {
+              document.execCommand("copy");
+              _ok();
+            } catch (_) {
+              _ok();
             }
-            function fallback(_b, _t, _ok) {
-              const ta = document.createElement("textarea");
-              ta.value = _t;
-              ta.style.position = "absolute";
-              ta.style.left = "-9999px";
-              document.body.appendChild(ta);
-              ta.select();
-              try {
-                document.execCommand("copy");
-                _ok();
-              } catch (_) {
-                _ok();
-              }
-              document.body.removeChild(ta);
-            }
-          }}
+            document.body.removeChild(ta);
+          }
+        }}
             >
               <span className="cap-copy-icon-wrap">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="cap-copy-icon cap-copy-icon-default" aria-hidden="true">
@@ -623,36 +615,36 @@ Each row maps a model to the exact Hugging Face checkpoint ValarAI serves, along
               className="cap-copy-btn"
               aria-label="Copy MiniMaxAI/MiniMax-M2.7"
               onClick={(e) => {
-            const b = e.currentTarget;
-            const t = "MiniMaxAI/MiniMax-M2.7";
-            const ok = () => {
-              b.classList.add("cap-copy-done");
-              setTimeout(() => b.classList.remove("cap-copy-done"), 1500);
-            };
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-              navigator.clipboard
-                .writeText(t)
-                .then(ok)
-                .catch(() => fallback(b, t, ok));
-            } else {
-              fallback(b, t, ok);
+          const b = e.currentTarget;
+          const t = "MiniMaxAI/MiniMax-M2.7";
+          const ok = () => {
+            b.classList.add("cap-copy-done");
+            setTimeout(() => b.classList.remove("cap-copy-done"), 1500);
+          };
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard
+              .writeText(t)
+              .then(ok)
+              .catch(() => fallback(b, t, ok));
+          } else {
+            fallback(b, t, ok);
+          }
+          function fallback(_b, _t, _ok) {
+            const ta = document.createElement("textarea");
+            ta.value = _t;
+            ta.style.position = "absolute";
+            ta.style.left = "-9999px";
+            document.body.appendChild(ta);
+            ta.select();
+            try {
+              document.execCommand("copy");
+              _ok();
+            } catch (_) {
+              _ok();
             }
-            function fallback(_b, _t, _ok) {
-              const ta = document.createElement("textarea");
-              ta.value = _t;
-              ta.style.position = "absolute";
-              ta.style.left = "-9999px";
-              document.body.appendChild(ta);
-              ta.select();
-              try {
-                document.execCommand("copy");
-                _ok();
-              } catch (_) {
-                _ok();
-              }
-              document.body.removeChild(ta);
-            }
-          }}
+            document.body.removeChild(ta);
+          }
+        }}
             >
               <span className="cap-copy-icon-wrap">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="cap-copy-icon cap-copy-icon-default" aria-hidden="true">
@@ -684,5 +676,5 @@ Each row maps a model to the exact Hugging Face checkpoint ValarAI serves, along
 </div>
 
 <Note>
-  To confirm what your API key can reach in a given environment at runtime, call [`GET /v1/models`](/api-reference/models-api/list-supported-models) against that environment rather than relying on this table alone.
+  To confirm what your API key can reach in a given environment at runtime, call `GET /v1/models` against that environment rather than relying on this table alone.
 </Note>
