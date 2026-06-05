@@ -1,0 +1,219 @@
+/*
+ * Capabilities table (Models page).
+ *
+ * Styles the hand-authored <table className="capabilities-table"> in
+ * models.mdx and renders each provider logo from /images/logos/<org>.svg
+ * via mask-image so the marks tint to the surrounding text color.
+ */
+
+.capabilities-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  margin: 1.5rem 0;
+}
+
+.capabilities-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 0.875rem;
+}
+
+/* Header */
+.capabilities-table .cap-th {
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #64748b;
+  padding: 0 0.75rem 0.6rem;
+  border-bottom: 1px solid #e2e8f0;
+  white-space: nowrap;
+}
+.capabilities-table .cap-th-bool {
+  text-align: center;
+}
+.capabilities-table .cap-th-link {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px dotted #94a3b8;
+}
+.capabilities-table .cap-th-link:hover {
+  color: #0f766e;
+}
+
+/* Rows */
+.capabilities-table .cap-cell {
+  padding: 0.7rem 0.75rem;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+}
+.capabilities-table .cap-row-last .cap-cell {
+  border-bottom: none;
+}
+
+/* Model cell */
+.cap-cell-model-inner {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+.cap-model-name {
+  font-weight: 600;
+  color: #0f172a;
+  line-height: 1.2;
+}
+.cap-creator {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  line-height: 1.3;
+}
+
+/* Provider logos (masked SVGs, tinted by background-color) */
+.cap-logo {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background-color: #334155;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: 22px 22px;
+  mask-size: 22px 22px;
+}
+.cap-logo[data-org="moonshot"] { -webkit-mask-image: url("/images/logos/moonshot.svg"); mask-image: url("/images/logos/moonshot.svg"); }
+.cap-logo[data-org="deepseek"] { -webkit-mask-image: url("/images/logos/deepseek.svg"); mask-image: url("/images/logos/deepseek.svg"); }
+.cap-logo[data-org="gemma"]    { -webkit-mask-image: url("/images/logos/gemma.svg");    mask-image: url("/images/logos/gemma.svg"); }
+.cap-logo[data-org="minimax"]  { -webkit-mask-image: url("/images/logos/minimax.svg");  mask-image: url("/images/logos/minimax.svg"); }
+.cap-logo[data-org="openai"]   { -webkit-mask-image: url("/images/logos/openai.svg");   mask-image: url("/images/logos/openai.svg"); }
+.cap-logo[data-org="zhipu"]    { -webkit-mask-image: url("/images/logos/zhipu.svg");    mask-image: url("/images/logos/zhipu.svg"); }
+
+/* Slug cell */
+.cap-slug-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.cap-slug-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  text-decoration: none;
+  color: #334155;
+}
+.cap-slug-link code {
+  font-size: 0.8rem;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 0.15rem 0.45rem;
+  color: inherit;
+}
+.cap-slug-link:hover code {
+  border-color: #0f766e;
+  color: #0f766e;
+}
+.cap-extlink {
+  opacity: 0.55;
+}
+.cap-slug-link:hover .cap-extlink {
+  opacity: 1;
+  color: #0f766e;
+}
+
+/* Copy button */
+.cap-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.cap-copy-btn:hover {
+  border-color: #0f766e;
+  color: #0f766e;
+}
+.cap-copy-icon-done {
+  display: none;
+}
+.cap-copy-btn.cap-copy-done {
+  border-color: #0f766e;
+  color: #0f766e;
+}
+.cap-copy-btn.cap-copy-done .cap-copy-icon-default {
+  display: none;
+}
+.cap-copy-btn.cap-copy-done .cap-copy-icon-done {
+  display: inline;
+}
+
+/* Boolean capability cells */
+.cap-cell-bool {
+  text-align: center;
+}
+.cap-cell-bool.is-true {
+  color: #0f766e;
+}
+.cap-cell-bool.is-true .cap-check {
+  display: inline-block;
+  vertical-align: middle;
+}
+.cap-cell-bool.is-false::after {
+  content: "–";
+  color: #cbd5e1;
+  font-weight: 600;
+}
+
+/* Dark mode */
+.dark .capabilities-table .cap-th {
+  color: #94a3b8;
+  border-bottom-color: #1e293b;
+}
+.dark .capabilities-table .cap-cell {
+  border-bottom-color: #182230;
+}
+.dark .cap-model-name {
+  color: #f1f5f9;
+}
+.dark .cap-creator {
+  color: #64748b;
+}
+.dark .cap-logo {
+  background-color: #cbd5e1;
+}
+.dark .cap-slug-link {
+  color: #cbd5e1;
+}
+.dark .cap-slug-link code {
+  background: #111c28;
+  border-color: #243244;
+}
+.dark .cap-copy-btn {
+  border-color: #243244;
+  color: #94a3b8;
+}
+.dark .cap-th-link {
+  border-bottom-color: #475569;
+}
+.dark .cap-cell-bool.is-true {
+  color: #2dd4bf;
+}
+.dark .cap-slug-link:hover code,
+.dark .cap-slug-link:hover .cap-extlink,
+.dark .cap-copy-btn:hover,
+.dark .cap-th-link:hover {
+  color: #2dd4bf;
+  border-color: #2dd4bf;
+}
+.dark .cap-cell-bool.is-false::after {
+  color: #334155;
+}
