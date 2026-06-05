@@ -1,0 +1,76 @@
+---
+title: "Introduction"
+description: "Get the ValarAI Python SDK installed and learn how this reference is organized"
+---
+
+`valar-sdk` is the official Python client for ValarAI. A single `import valar`
+gives you two product surfaces, plus the configuration and Tinker integration
+that support them:
+
+* **Traces** — a flight recorder that captures the trajectories of
+  long-running agents and background tasks.
+* **Inference** — lightweight wrappers around ValarAI's hosted inference
+  endpoints that tie each model call back to the Trace it belongs to.
+
+This Reference covers the SDK's public Python API. If you'd rather follow a
+task-driven walkthrough, head to the [Traces](/traces-sdk) guide.
+
+## Installation
+
+With pip:
+
+```bash theme={null}
+pip install valar-sdk
+```
+
+With uv:
+
+```bash theme={null}
+uv add valar-sdk
+```
+
+Python 3.11 or newer is required.
+
+## Authentication
+
+Export your API key before you call into the SDK:
+
+```bash theme={null}
+export VALAR_API_KEY=sk_...
+```
+
+Inference calls require `VALAR_API_KEY`. If the key isn't set, `valar.trace`
+falls back to a safe no-op — no Trace is created and no requests go out — so
+that local scripts keep running rather than failing. The
+[Traces reference](/traces-sdk) covers this in more depth.
+
+Use `VALAR_MODE` to choose which environment the SDK targets; it defaults to
+`prod`, with `dev` and `staging` also accepted. The full set of supported
+environment variables lives in the
+[Traces reference environment table](/traces-sdk#environment-variables).
+
+## The `valar` surface
+
+The things you'll reach for day to day all hang directly off the top-level
+`valar` module:
+
+| Symbol                                                               | What it is                                                                          |
+| -------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `valar.trace`                                                        | Record agent and task trajectories. See [Traces](/traces-sdk).                      |
+| `valar.inference`                                                    | Trace-correlated inference wrappers. See [Inference](/traces-sdk-inference).        |
+| `valar.Config` / `valar.RetryPolicy`                                 | Endpoint and retry configuration. See [Configuration](/sdk-configuration).          |
+| `valar.ValarTokenCompleter` / `valar.get_tinker_checkpoint_signed_url` | Tinker RL/training integration. See [Tinker](/sdk-tinker).                         |
+
+The installed SDK version string is available as `valar.__version__`.
+
+## Errors
+
+Every exception the SDK raises descends from one base class,
+`valar.ValarError`, which means a single `except valar.ValarError` is enough to
+catch anything the SDK throws. From there, each product refines the hierarchy:
+
+* Trace and inference errors — see [Traces → Errors](/traces-sdk-errors).
+
+A handful of calls instead raise standard Python exceptions (`ValueError`,
+`LookupError`, `PermissionError`, `FileNotFoundError`, `TimeoutError`) when one
+of those is the more natural choice; the affected methods call this out.

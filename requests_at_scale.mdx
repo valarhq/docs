@@ -1,0 +1,220 @@
+---
+title: "Sending Requests at Scale"
+description: "How to push thousands of concurrent requests through the ValarAI API"
+---
+
+Sending requests one after another quickly becomes the bottleneck once you're talking thousands — or tens of thousands — of calls to ValarAI. To absorb that kind of volume, ValarAI gives you two options: the **Batch API** and the **Responses API**.
+
+## Batch API
+
+With the Batch API you can pack up to 100,000 requests into a single call, capped at 256 MB per batch.
+
+1. **Submit a batch** — bundle every request into one `POST /batches` call.
+2. **Poll for status** — keep hitting `GET /batches/{batch_id}` until everything has finished.
+3. **Retrieve results** — pull each result back through `GET /batches/{batch_id}/{custom_id}`.
+
+Need a list of everything you've submitted before? Call `GET /batches`.
+
+Include an `Idempotency-Key` header when you submit, and a client retry after a dropped connection will replay your original batch reservation rather than spinning up a duplicate. See [Idempotent Requests](/idempotency).
+
+<Note>
+  When the field is left out, batch items fall back to
+  `metadata.completion_window: "standard"`. Set it explicitly and it has to be
+  either `"standard"` or `"flex"` — batch items reject the low-latency `"asap"`
+  and `"priority"` tiers. When latency matters, reach for the [Responses
+  API](#responses-api-with-background-mode) instead. The [Completion
+  Windows](/completion-windows) page lays out every tier and which models support
+  each one.
+</Note>
+
+### Python example
+
+Start by installing the `requests` library:
+
+```bash theme={null}
+pip install requests
+```
+
+```python theme={null}
+import time
+import requests
+
+BASE_URL = "https://api.valarhq.ai/v1"
+API_KEY = "YOUR_KEY_HERE"
+HEADERS = {"Authorization": f"Bearer {API_KEY}"}
+
+# 1. Submit a batch
+batch_requests = [
+    {
+        "custom_id": f"request-{i}",
+        "params": {
+            "model": "zai-org/GLM-5.1-FP8",
+            "max_output_tokens": 2048,
+            "input": [{"role": "user", "content": f"What is a fun fact about the number {i}?"}],
+            "metadata": {"completion_window": "standard"},
+        },
+    }
+    for i in range(100)
+]
+
+resp = requests.post(
+    f"{BASE_URL}/batches",
+    headers=HEADERS,
+    json={
+        "endpoint": "/v1/responses",
+        "label": "my-batch-job",
+        "requests": batch_requests,
+    },
+)
+batch = resp.json()
+batch_id = batch["id"]
+print(f"Created batch {batch_id} with {batch['request_counts']} requests")
+
+# 2. Poll until all requests are completed
+while True:
+    status_resp = requests.get(f"{BASE_URL}/batches/{batch_id}", headers=HEADERS)
+    status = status_resp.json()
+    request_status = status["request_status"]
+
+    done = sum(1 for r in request_status.values() if r["status"] in ("COMPLETED", "FAILED", "CANCELLED"))
+    print(f"Progress: {done}/{len(request_status)}")
+
+    if done == len(request_status):
+        break
+    time.sleep(5)
+
+# 3. Retrieve results
+for custom_id, info in request_status.items():
+    if info["status"] == "COMPLETED":
+        result = requests.get(
+            f"{BASE_URL}/batches/{batch_id}/{custom_id}", headers=HEADERS
+        ).json()
+        output_text = "".join(
+            c["text"]
+            for item in result.get("output", [])
+            for c in item.get("content", [])
+            if c.get("type") == "output_text"
+        )
+        print(f"{custom_id}: {output_text[:100]}...")
+```
+
+## Responses API with background mode
+
+Alternatively, fire requests off one at a time through the Responses API with `background=True`. For heavy workloads — 1,000 requests and up — here's what we suggest:
+
+1. **Pair `AsyncOpenAI` with `DefaultAioHttpClient()`** — for high-concurrency traffic, the SDK's aiohttp client outperforms the default `httpx` backend.
+2. **Throttle concurrency with an `asyncio.Semaphore`** — this hands you precise control over the number of simultaneous connections (say, 200) so you don't exhaust them.
+3. **Submit everything at once under `background=True`, then poll** — launch all submissions in parallel behind the semaphore, gather up the response IDs, and run a separate loop to poll for completion.
+4. **Attach a per-request `Idempotency-Key`** — that way a retry after a transient failure replays the reservation instead of redoing the inference. See [Idempotent Requests](/idempotency).
+
+### Python example
+
+Begin by installing tqdm and the OpenAI SDK with the aiohttp extra:
+
+```bash theme={null}
+pip install tqdm
+pip install 'openai[aiohttp]'
+```
+
+```python theme={null}
+import argparse
+import asyncio
+
+from tqdm import tqdm
+from openai import DefaultAioHttpClient
+from openai import AsyncOpenAI
+
+async def main(
+    num_requests: int,
+    input_tokens: int,
+    max_output_tokens: int,
+    model: str,
+):
+    base_url = "https://api.valarhq.ai/v1"
+    api_key = "YOUR_KEY_HERE"
+
+    async with AsyncOpenAI(
+        base_url=base_url,
+        api_key=api_key,
+        http_client=DefaultAioHttpClient(),
+    ) as client:
+        # List supported models
+        models = await client.models.list()
+        supported_models = [m.id for m in models.data]
+        print("Supported Models:")
+        print(supported_models)
+
+        # Submit requests concurrently
+        sem = asyncio.Semaphore(200)
+        pbar_submit = tqdm(total=num_requests, desc="Submitting requests")
+
+        async def submit(i):
+            filler = ""
+            if input_tokens > 0:
+                filler = " " + ("word " * input_tokens)
+            content = f"TASK {i}: What is a fun fact about the number {i}? Then, find the word at index {i} in the following sequence of words: {filler}"
+
+            async with sem:
+                response = await client.responses.create(
+                    model=model,
+                    input=[{"role": "user", "content": content}],
+                    max_output_tokens=max_output_tokens,
+                    background=True,
+                )
+            pbar_submit.update(1)
+            return response.id
+
+        response_ids = await asyncio.gather(*[submit(i) for i in range(num_requests)])
+        pbar_submit.close()
+        response_ids = list(response_ids)
+        print(f"Created {len(response_ids)} response IDs")
+
+        # Poll for completions
+        completed = {}
+        poll_sem = asyncio.Semaphore(200)
+        pbar = tqdm(total=len(response_ids), desc="Polling responses")
+
+        async def poll(response_id):
+            for _ in range(3600):  # 1 hour timeout
+                async with poll_sem:
+                    response = await client.responses.retrieve(response_id)
+                if response.status == "completed":
+                    completed[response_id] = response
+                    pbar.update(1)
+                    return
+                await asyncio.sleep(1)
+            print(f"Timed out waiting for {response_id}")
+
+        await asyncio.gather(*[poll(rid) for rid in response_ids])
+        pbar.close()
+
+        for response_id in response_ids:
+            resp = completed[response_id]
+            output_text = "".join(
+                c.text
+                for item in resp.output
+                for c in getattr(item, "content", []) or []
+                if getattr(c, "type", None) == "output_text"
+            )
+            print(f"\n\n{response_id} completed with output:\n{output_text}")
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--num-requests", type=int, default=20000)
+    parser.add_argument("--input-tokens", type=int, default=50)
+    parser.add_argument("--max-output-tokens", type=int, default=4000)
+    parser.add_argument("--model", type=str, default="zai-org/GLM-5.1-FP8")
+    args = parser.parse_args()
+
+    asyncio.run(
+        main(
+            num_requests=args.num_requests,
+            input_tokens=args.input_tokens,
+            max_output_tokens=args.max_output_tokens,
+            model=args.model,
+        )
+    )
+```
+
+Treat a semaphore limit of 200 as your baseline. Dial it down if connection errors or timeouts crop up, and push it higher when you've got the headroom and want submissions to move faster.

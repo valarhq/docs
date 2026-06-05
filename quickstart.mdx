@@ -1,47 +1,76 @@
 ---
 title: "Quickstart"
-description: "Begin with a guide on the fastest path to a successful outcome"
+description: "Get started with ValarAI using OpenAI clients"
 ---
 
-Describe how someone begins using your product. What is the first thing they need to do? Are there any prerequisites?
+Because ValarAI implements the OpenAI **Responses API** (`/v1/responses`), moving over from the OpenAI SDK comes down to swapping your base URL and API key.
 
-A quickstart should take someone from zero to using your product. They'll get a quick win and a sense of what they can accomplish.
+## 1. Get your API key
 
-## Prerequisites
+Create an account on the [ValarAI dashboard](https://app.valarhq.ai) and generate an API key.
 
-Before you begin, you must have:
+## 2. Make a request
 
-- Requirement one (for example, Node.js 18+, a free account, an API key)
-- Requirement two (for example, a compatible device, a compatible browser, a compatible operating system)
+Install the OpenAI SDK and direct it at ValarAI. By passing `background=True`, the call returns a `response_id` right away; you then poll that ID until the job finishes:
 
-## Get started
+```python theme={null}
+import time
 
-<Steps>
-  <Step title="Install">
-    Describe how to install your product or sign up.
+from openai import OpenAI
 
-    ```bash
-    npm install your-package
-    ```
-  </Step>
-  <Step title="Configure">
-    Describe any setup or configuration needed before first use.
 
-    ```bash
-    your-cli init
-    ```
-  </Step>
-  <Step title="Run it">
-    Show the first thing a user does to see it working.
+client = OpenAI(
+    base_url="https://api.valarhq.ai/v1",
+    api_key="YOUR_VALAR_API_KEY",
+)
 
-    ```bash
-    your-cli start
-    ```
-  </Step>
-</Steps>
+response = client.responses.create(
+    model="zai-org/GLM-5.1-FP8",
+    input="Explain the key ideas behind transformers.",
+    max_output_tokens=1000,
+    background=True, # return immediately with ID to poll
+)
+print(f"Started {response.id}, waiting ...")
 
-<Tip>
-  Give people a way to get help. This could be a link to a support page, a chat with a customer support agent, or a forum for your product.
+while response.status in {"in_progress", "queued"}:
+    time.sleep(1)
+    response = client.responses.retrieve(response.id)
 
-  Example: Need help? Reach out to us at [support@yourcompany.com](mailto:support@yourcompany.com).
-</Tip>
+if response.status != "completed":
+    raise RuntimeError(f"Error: {response.status}")
+
+print(response.output_text)
+
+```
+
+### cURL Example
+
+```bash theme={null}
+URL=https://api.valarhq.ai/v1/responses
+AUTH="Authorization: Bearer YOUR_VALAR_API_KEY"
+
+# Create the response (returns immediately with an id)
+RESPONSE_ID=$(curl -s $URL \
+  -H "$AUTH" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "zai-org/GLM-5.1-FP8",
+    "input": "Explain the key ideas behind transformers.",
+    "background": true,
+    "metadata": { "completion_window": "standard" }
+  }' | jq -r '.id')
+
+# Poll until completed
+until [ "$(curl -s $URL/$RESPONSE_ID \
+  -H "$AUTH" | jq -r '.status')" = "completed" ]; do
+  sleep 1
+done
+
+curl -s $URL/$RESPONSE_ID -H "$AUTH" | jq
+```
+
+## 3. Next steps
+
+* Check [Models](/models) for every supported model, and [Pricing](/pricing) for the per-token rates.
+* Explore the complete [API reference](/api-reference) for available endpoints and request parameters.
+* Reach out at [support@valarhq.ai](mailto:support@valarhq.ai) with any questions.

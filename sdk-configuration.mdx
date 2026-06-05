@@ -1,0 +1,81 @@
+---
+title: "Configuration"
+description: "How endpoints and retries are resolved by the SDK, via valar.Config and valar.RetryPolicy"
+---
+
+For most apps, environment variables are all the configuration you need: set
+`VALAR_API_KEY` (and, if you like, `VALAR_MODE`) and you're set. `valar.Config`
+captures whatever the SDK resolved from those variables and is exported so you
+can see exactly which backend you're pointed at.
+
+## valar.Config
+
+A `Config` carries the SDK's resolved settings — your API key and the API URL
+it will contact. Typically you'll build it straight from the environment using
+`Config.from_env()`.
+
+```python theme={null}
+import valar
+
+config = valar.Config.from_env()
+print(config.api_url)  # https://api.valarhq.ai/v1 (prod default)
+```
+
+### Constructors
+
+```python theme={null}
+@classmethod
+def from_env() -> Config
+
+@classmethod
+def from_env_optional_api_key() -> Config
+```
+
+* `Config.from_env()` parses the environment and **requires** `VALAR_API_KEY`,
+  raising `ValueError` when it isn't set. Inference calls rely on this path.
+* `Config.from_env_optional_api_key()` behaves identically except that the API
+  key is optional — it backs diagnostic code paths (such as `valar.trace`'s
+  no-op mode) that must not crash when no key is configured.
+
+### Attributes
+
+| Attribute | Description                                |
+| --------- | ------------------------------------------ |
+| `api_key` | Your ValarAI API key (`sk_...`).           |
+| `api_url` | Base URL for inference and traces.         |
+
+### Modes and endpoint resolution
+
+`VALAR_MODE` picks a named environment; with no value set, the `prod` defaults
+apply. Any value the SDK doesn't recognize raises `ValueError`.
+
+| `VALAR_MODE`     | `api_url`                       |
+| ---------------- | ------------------------------- |
+| `prod` (default) | `https://api.valarhq.ai/v1`     |
+| `dev`            | `https://dev.valarhq.ai`        |
+| `staging`        | `https://staging.valarhq.ai`    |
+| `local`          | `http://localhost:8080`         |
+
+To bypass the mode default entirely, set `VALAR_API_URL` directly — it wins
+over whatever the mode would otherwise resolve to.
+
+<Note>
+  The complete catalog of SDK environment variables — including the Trace and
+  agent attribution settings — lives in the [Traces environment
+  table](/traces-sdk#environment-variables).
+</Note>
+
+## Retries
+
+Transient failures are retried for you automatically. Out of the box the SDK
+will try up to 3 times, backing off exponentially with full jitter and
+respecting a server-supplied `Retry-After` header when one is returned:
+
+* **502 / 503 / 504** always trigger a retry.
+* **429** is retried only if the response carries a valid `Retry-After`.
+* **500** and every other status are raised right away, with no retry.
+
+This behavior is described by `valar.RetryPolicy`. Two ready-made instances are
+exported: `valar.DEFAULT_RETRY_POLICY` (the policy above) and `valar.NO_RETRY`
+(a single attempt, no retries). They're there for inspection — the SDK drives
+retries internally, so there's nothing for you to wire up per call.

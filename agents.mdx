@@ -1,0 +1,124 @@
+---
+title: "Building a Tool-Calling Agent"
+description: "Drive multi-turn, tool-using conversations on the ValarAI API"
+---
+
+With the Responses API, ValarAI lets the model invoke your external tools and reason over what they return — turn after turn — so you can assemble full agents on top of it.
+
+## The loop
+
+1. Post a user message together with your **tool definitions** to `/v1/responses`.
+2. In its reply, the model can emit one or more `function_call` items, either in place of text or alongside it.
+3. Run those tools on your side, then issue a fresh request that carries the complete conversation history plus the outcomes wrapped as `function_call_output` items.
+4. Keep going until a response comes back containing text alone.
+
+Every call carries the conversation in full. The items inside `response.output` are already valid input items, so you can push them straight onto your conversation list without any conversion — then tack on the `function_call_output` results.
+
+## Worked example: a two-turn weather agent
+
+Here we use `zai-org/GLM-5.1-FP8`. The model handles a weather lookup on the first turn and, on the second, answers a follow-up by drawing on what it learned earlier.
+
+```python theme={null}
+import json
+import time
+
+from openai import OpenAI
+
+client = OpenAI(
+    base_url="https://api.valarhq.ai/v1",
+    api_key="YOUR_VALAR_API_KEY",
+)
+
+MODEL = "zai-org/GLM-5.1-FP8"
+
+TOOLS = [
+    {
+        "type": "function",
+        "name": "get_weather",
+        "description": "Get the current weather for a location.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "location": {
+                    "type": "string",
+                    "description": "City and state, e.g. San Francisco, CA",
+                }
+            },
+            "required": ["location"],
+            "additionalProperties": False,
+        },
+        "strict": True,
+    },
+]
+
+TOOL_DISPATCH = {"get_weather": lambda location: '{"temperature": "62°F", "condition": "Foggy"}'}
+
+
+def poll(response, timeout=300):
+    start = time.time()
+    while response.status not in ("completed", "failed", "cancelled"):
+        if time.time() - start > timeout:
+            raise TimeoutError(f"{response.id} did not complete within {timeout}s")
+        time.sleep(2)
+        response = client.responses.retrieve(response.id)
+    if response.status != "completed":
+        raise RuntimeError(f"{response.id} status: {response.status}")
+    return response
+
+
+def agent_turn(conversation, user_message):
+    """Send a user message and loop until the model stops calling tools."""
+    conversation.append({"role": "user", "content": user_message})
+
+    while True:
+        response = client.responses.create(
+            model=MODEL,
+            input=conversation,
+            tools=TOOLS,
+            max_output_tokens=4096,
+            background=True,
+        )
+        response = poll(response)
+
+        tool_calls = [
+            item for item in (response.output or [])
+            if getattr(item, "type", None) == "function_call"
+        ]
+        conversation.extend(response.output)
+
+        if not tool_calls:
+            return response
+
+        for call in tool_calls:
+            args = json.loads(call.arguments)
+            output = TOOL_DISPATCH[call.name](**args)
+            conversation.append(
+                {"type": "function_call_output", "call_id": call.call_id, "output": output}
+            )
+
+
+conversation = []
+
+# Turn 1: triggers a get_weather tool call, then the model summarizes the result
+response = agent_turn(conversation, "What's the weather in San Francisco?")
+print("Turn 1:", response.output_text)
+
+# Turn 2: follow-up reuses conversation context
+response = agent_turn(conversation, "How about New York — warmer or colder?")
+print("Turn 2:", response.output_text)
+```
+
+### Step by step
+
+1. **Turn 1** — given the question and the tool definition, the model fires a `get_weather` call for San Francisco. Once we hand the result back, we issue a second request and the model writes up a text summary.
+
+2. **Turn 2** — we resend the entire conversation, Turn 1's call and result included. The model requests `get_weather` for New York and, with the result in hand, weighs it against the San Francisco figures already sitting in context.
+
+## Tips
+
+* **Pick a completion window to match your agent loop.** For most agent workloads, the default `standard` window strikes a sensible cost-versus-trajectory-time balance; switch to `priority` when single turns are latency-sensitive, or `flex` for background batches that can tolerate hours of queueing. The [Completion windows](/completion-windows) page covers response-time distributions and pricing.
+* **Favor `background=True`** for agents that run a while. Because ValarAI is tuned for throughput, a request can take longer than you'd expect from a low-latency API; background mode sidesteps HTTP timeouts and lets you poll instead.
+* **Always resend the whole conversation.** That means every earlier message, all `response.output` items, and every tool result. Output items from prior responses drop straight in — no serialization or conversion required.
+* **`strict: true`** on your tool parameters turns on structured-output guarantees, so the `arguments` JSON the model emits will always match your schema.
+* **Parallel tool calls** work out of the box — a single response may carry several `function_call` items at once.
+* **Set a per-request `Idempotency-Key` header** so that a retry serves the stored response rather than rerunning inference and billing you twice. See [Idempotent Requests](/idempotency).

@@ -1,0 +1,96 @@
+---
+title: "Idempotent Requests"
+description: "Patterns for safely retrying calls to the ValarAI inference APIs"
+---
+
+Send a `POST` request with an **idempotency key** header, and ValarAI records the reservation together with the response it produces. Send the same request again under the same key, and you get the originally reserved response back — inference is never re-run. That makes it safe for clients to retry through flaky networks, timeouts, and uncertain 5xx responses.
+
+## Sending an idempotency key
+
+Mint one key per logical request — UUIDs, or any unique string up to 255 characters, work well — and reuse it on the first try and on every retry.
+
+<CodeGroup>
+  ```python theme={null}
+  from openai import OpenAI
+
+  client = OpenAI(
+      api_key="YOUR_VALAR_API_KEY",
+      base_url="https://api.valarhq.ai/v1",
+  )
+
+  response = client.responses.create(
+      model="zai-org/GLM-5.1-FP8",
+      input="Summarize this document.",
+      extra_headers={"Idempotency-Key": "order-9f8e7d6c"},
+  )
+  ```
+
+  ```bash theme={null}
+  curl -X POST https://api.valarhq.ai/v1/responses \
+    -H "Authorization: Bearer YOUR_VALAR_API_KEY" \
+    -H "Content-Type: application/json" \
+    -H "Idempotency-Key: order-9f8e7d6c" \
+    -d '{
+      "model": "zai-org/GLM-5.1-FP8",
+      "input": "Summarize this document."
+    }'
+  ```
+</CodeGroup>
+
+## Behavior
+
+* **Scope.** A reservation is keyed on `(organization, API key, idempotency key)`. Send the same key under a different API key and it counts as a separate reservation — so rotating keys won't break replay, but reusing one idempotency key across multiple API keys won't dedupe either.
+* **Body fingerprint.** ValarAI takes a SHA-256 fingerprint of the request body. Reuse a key with a meaningfully different body and you get `400 idempotency_error` instead of the earlier response — which stops a retry from quietly handing back the wrong answer after the client altered the request.
+* **Validation failures don't consume the key.** If a request fails validation — any `4xx` raised before the reservation is written — the key stays unreserved. You're free to fix the body and retry under the same key.
+* **Replays reflect current state.** A replay returns the live state of the underlying response record rather than a frozen copy. With background requests, the `status` you see tracks the task's latest transition (for instance, `queued` → `in_progress` → `completed`).
+
+## Retrying with an idempotency key
+
+The benefit only materializes once you actually retry. Your first call reserves the key; every later call lands on that same reservation and returns the stored response without re-running inference.
+
+### When to retry
+
+| Signal                  | What it means                                                   | What to do                                |
+| ----------------------- | --------------------------------------------------------------- | ----------------------------------------- |
+| Network error / timeout | Ambiguous — the server may or may not have received the request | Retry with the same idempotency key       |
+| `5xx` on a POST         | Transient server-side failure                                   | Retry with the same idempotency key       |
+| `429` + `Retry-After`   | Rate limit                                                      | Wait the `Retry-After` value, then retry  |
+| `body.status: "failed"` | Inference genuinely failed                                      | Investigate the cause; do not blind-retry |
+
+### How to retry
+
+```python theme={null}
+import random
+import time
+import uuid
+import requests
+
+API_KEY = "YOUR_VALAR_API_KEY"
+BASE_URL = "https://api.valarhq.ai/v1"
+
+# One key, reused across every retry.
+headers = {
+    "Authorization": f"Bearer {API_KEY}",
+    "Content-Type": "application/json",
+    "Idempotency-Key": str(uuid.uuid4()),
+}
+body = {"model": "zai-org/GLM-5.1-FP8", "input": "Summarize this document."}
+
+for attempt in range(5):
+    try:
+        resp = requests.post(f"{BASE_URL}/responses", headers=headers, json=body, timeout=30)
+        resp.raise_for_status()
+        break
+    except requests.RequestException:
+        # Network error or 5xx — safe to retry, the key dedupes server-side.
+        time.sleep(random.uniform(0, 2**attempt))
+else:
+    raise RuntimeError("all retries exhausted")
+
+print(resp.json()["id"])
+```
+
+## See also
+
+* [Sending Requests at Scale](/requests_at_scale) — the batch and background workflows where idempotent retries pay off most.
+* [Webhooks](/webhooks) — combine idempotent retries with webhook delivery so a client can re-drive submission without triggering another inference run.

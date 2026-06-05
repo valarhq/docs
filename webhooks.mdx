@@ -1,0 +1,125 @@
+---
+title: "Webhooks"
+description: "Get notified on completion through completion_webhook and webhook_token"
+---
+
+Any request you submit via `POST /v1/responses`, `POST /v1/chat/completions`, or `POST /v1/messages` can carry a **completion webhook** in its metadata. Once the request finishes processing, ValarAI POSTs the complete response payload to the URL you supplied, sparing you from having to poll.
+
+## Enabling a completion webhook
+
+Add a `completion_webhook` URL to the `metadata` object on your create request. It has to be an `http` or `https` URL.
+
+<CodeGroup>
+  ```python theme={null}
+  from openai import OpenAI
+
+  client = OpenAI(
+      api_key="YOUR_VALAR_API_KEY",
+      base_url="https://api.valarhq.ai/v1",
+  )
+
+  response = client.responses.create(
+      model="zai-org/GLM-5.1-FP8",
+      input="Summarize this document.",
+      background=True,
+      metadata={
+          "completion_webhook": "https://your-server.com/valar-completion",
+      },
+  )
+  ```
+
+  ```bash theme={null}
+  curl -X POST https://api.valarhq.ai/v1/responses \
+    -H "Authorization: Bearer YOUR_VALAR_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "model": "zai-org/GLM-5.1-FP8",
+      "input": "Summarize this document.",
+      "background": true,
+      "metadata": {
+        "completion_webhook": "https://your-server.com/valar-completion"
+      }
+    }'
+  ```
+</CodeGroup>
+
+Leaving out `metadata.completion_webhook`, or supplying an invalid value, simply means no webhook is fired. Neither the create call nor the response is affected — webhooks are optional and delivered on a best-effort basis.
+
+The same metadata keys (`completion_webhook`, `webhook_token`) go on the request body for both Chat Completions and Anthropic Messages.
+
+## Webhook payload
+
+The **POST** that ValarAI sends to your URL contains:
+
+* **Content-Type:** `application/json`
+* **Body:** The identical JSON object you'd get back from `GET /v1/responses/{response_id}`
+
+## Securing webhooks with a token
+
+Set `webhook_token` in the `metadata` to confirm that incoming calls genuinely originate from ValarAI. ValarAI then passes that token's value as a Bearer token in the webhook POST's `Authorization` header.
+
+<CodeGroup>
+  ```python theme={null}
+  response = client.responses.create(
+      model="zai-org/GLM-5.1-FP8",
+      input="Summarize this document.",
+      background=True,
+      metadata={
+          "completion_webhook": "https://your-server.com/valar-completion",
+          "webhook_token": "your-secret-token",
+      },
+  )
+  ```
+</CodeGroup>
+
+On your end, validate `Authorization: Bearer your-secret-token` and turn away anything that doesn't line up.
+
+## Delivery behavior
+
+* **Duplicates:** A given webhook may, on occasion, arrive more than once. Record the response `id` carried in the webhook body and skip any event you've already handled.
+* **Retries:** Failed deliveries (a non-2xx status or a network error, for instance) are retried up to **3 times**. Return a **2xx** status the moment you've accepted the payload so ValarAI knows to stop retrying.
+* **Timeout:** Every attempt is capped at **30 seconds**. A timed-out or failed attempt is followed by the next retry.
+* **Best-effort:** A webhook that fails is logged but leaves the response and the API untouched. Even if delivery never succeeds, the response stays reachable through `GET /v1/responses/{response_id}`.
+
+## Full example
+
+A complete, end-to-end walkthrough using ngrok:
+
+**1. Start a local webhook listener** that echoes the payload and returns 200:
+
+```bash theme={null}
+python -c "
+from http.server import HTTPServer, BaseHTTPRequestHandler; import json
+class H(BaseHTTPRequestHandler):
+ def do_POST(self):
+  print(json.dumps(json.loads(self.rfile.read(int(self.headers['Content-Length']))), indent=2))
+  self.send_response(200); self.end_headers()
+HTTPServer(('127.0.0.1', 8765), H).serve_forever()
+"
+```
+
+**2. In a second terminal, expose it with ngrok:**
+
+```bash theme={null}
+ngrok http 8765
+```
+
+Grab the `https://xxxx.ngrok-free.app` forwarding URL printed in the output.
+
+**3. In a third terminal, create a response with the webhook attached:**
+
+```bash theme={null}
+curl -X POST https://api.valarhq.ai/v1/responses \
+  -H "Authorization: Bearer YOUR_VALAR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "zai-org/GLM-5.1-FP8",
+    "input": "What is 2+2? Reply with just the number.",
+    "background": true,
+    "metadata": {
+      "completion_webhook": "https://xxxx.ngrok-free.app"
+    }
+  }'
+```
+
+As soon as the response is done, ValarAI POSTs the full payload to your listener.

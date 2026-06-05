@@ -1,0 +1,44 @@
+---
+title: "Overview"
+description: "Query spend, balance, and operational metrics for your account programmatically"
+---
+
+Need your ValarAI usage figures inside a script, CLI tool, or custom dashboard? The Usage API exposes them directly. It authenticates with the very same key that powers your calls to `api.valarhq.ai`.
+
+## Base URL
+
+```
+https://usage.valarhq.ai
+```
+
+## Authentication
+
+Pass your API key as a Bearer token in the `Authorization` header on every request.
+
+<Note>
+  The key here is identical to the one used by the inference API at
+  `api.valarhq.ai`. Generate and manage keys from the [ValarAI
+  dashboard](https://app.valarhq.ai).
+</Note>
+
+<CodeGroup>
+  ```python theme={null}
+  import requests
+
+  headers = {"Authorization": "Bearer YOUR_VALAR_API_KEY"}
+  resp = requests.get("https://usage.valarhq.ai/v1/usage", headers=headers)
+  print(resp.json())
+  ```
+
+  ```bash theme={null}
+  curl -s -H "Authorization: Bearer $VALAR_API_KEY" \
+    https://usage.valarhq.ai/v1/usage | jq
+  ```
+</CodeGroup>
+
+<Card title="Endpoints" icon="code" href="/usage-endpoints" horizontal>
+  The complete reference for each `GET /v1/usage` route, covering parameters,
+  response shapes, error formats, and headers.
+</Card>
+
+<Info>Expect a small lag in usage data — it is not reported in real time.</Info>

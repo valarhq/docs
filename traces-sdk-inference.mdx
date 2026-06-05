@@ -1,0 +1,118 @@
+---
+title: "Inference"
+description: "Trace-correlated wrappers around ValarAI's inference endpoints"
+---
+
+`valar.inference` offers lightweight wrappers over ValarAI's hosted inference
+endpoints. Each one POSTs your JSON payload verbatim and returns the raw JSON
+response as a `dict`. Whenever a [Trace](/traces-sdk) is active, the wrappers
+attach correlation headers so the model call lands on the Trace timeline, scoped
+to whatever span and agent are active.
+
+```python theme={null}
+import valar
+
+resp = valar.inference.responses.create(
+    model="zai-org/GLM-5",
+    input="Say hello in one sentence.",
+)
+
+chat = valar.inference.chat.completions.create(
+    model="zai-org/GLM-5",
+    messages=[{"role": "user", "content": "hello"}],
+)
+```
+
+## responses.create
+
+```python theme={null}
+def create(
+    *,
+    trace: Trace | None = None,
+    headers: Mapping[str, str] | None = None,
+    timeout: float | None = None,
+    **payload,
+) -> dict
+```
+
+POSTs `payload` to `/v1/responses` and returns the raw JSON response dict.
+
+| Parameter   | Default | Description                                                       |
+| ----------- | ------- | ----------------------------------------------------------------- |
+| `**payload` | —       | The request body (e.g. `model`, `input`). Sent as-is.             |
+| `trace`     | `None`  | Correlate with an explicit Trace. Defaults to the current Trace.  |
+| `headers`   | `None`  | Extra request headers to merge.                                   |
+| `timeout`   | `None`  | Request timeout in seconds.                                       |
+
+## chat.completions.create
+
+```python theme={null}
+def create(
+    *,
+    trace: Trace | None = None,
+    headers: Mapping[str, str] | None = None,
+    timeout: float | None = None,
+    **payload,
+) -> dict
+```
+
+POSTs `payload` to `/v1/chat/completions` and returns the raw JSON response
+dict. The parameters match `responses.create`.
+
+## Trace correlation
+
+When a current Trace is present (or you supply `trace=`), the wrappers add the
+`X-Valar-Trace-Id` header together with the active span/agent context, so the
+dashboard pins the model call to the correct spot on the timeline. Use `trace=`
+to target a specific Trace, or simply call inference with no active Trace for
+plain, uncorrelated inference.
+
+```python theme={null}
+with trace.agent("reviewer", name="Reviewer", role="reviewer"):
+    with trace.span("draft"):
+        # Auto-attributed to this agent/span.
+        valar.inference.responses.create(model="zai-org/GLM-5", input="...")
+```
+
+## Streaming is not supported in v0
+
+Passing `stream=True` raises `valar.InferenceError`. To stream — or to bring
+your own HTTP / OpenAI client — call the endpoint directly and attach the Trace
+id yourself via [`valar.trace.headers()`](/traces-sdk#headers):
+
+```python theme={null}
+import json, os, urllib.request
+import valar
+
+valar.trace.init(name="raw-client")
+
+api_urls = {
+    "prod": "https://api.valarhq.ai",
+    "dev": "https://dev.valarhq.ai",
+    "staging": "https://staging.valarhq.ai",
+}
+mode = os.environ.get("VALAR_MODE", "prod").strip().lower() or "prod"
+api_url = os.environ.get("VALAR_API_URL", "").strip() or api_urls[mode]
+
+headers = valar.trace.headers({"Content-Type": "application/json"})
+headers["Authorization"] = "Bearer " + os.environ["VALAR_API_KEY"]
+
+req = urllib.request.Request(
+    api_url.rstrip("/") + "/v1/responses",
+    data=json.dumps({"model": "zai-org/GLM-5", "input": "hello"}).encode(),
+    headers=headers,
+    method="POST",
+)
+```
+
+## Trace limitations
+
+The v0 Trace SDK ships without native async helpers, streaming inference
+wrappers, an agent framework, orchestration, swarms, memory graphs, tool
+abstractions, or an OpenAI client factory.
+
+## Errors
+
+The inference wrappers raise `valar.InferenceError` (for instance on
+`stream=True` or a missing API key) and `valar.InferenceHTTPError` for non-2xx
+responses. See [Errors](/traces-sdk-errors).

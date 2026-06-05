@@ -1,0 +1,63 @@
+---
+title: "Errors"
+description: "Exception taxonomy for Traces and inference"
+---
+
+Every Trace and inference exception descends from `valar.ValarError`, the base
+class for all SDK errors. The Trace delivery calls — `flush`, `complete`, and
+`fail` — raise these, whereas `event()` never raises network errors.
+
+```text theme={null}
+ValarError
+├─ TraceError
+│  └─ TraceHTTPError
+│     └─ TraceNotFoundError
+├─ InferenceError
+│  └─ InferenceHTTPError
+```
+
+```python theme={null}
+import valar
+
+try:
+    valar.trace.complete(message="done")
+except valar.TraceNotFoundError:
+    ...  # the Trace no longer exists for this API key
+except valar.TraceError as exc:
+    ...  # any other Trace delivery failure
+```
+
+## TraceError
+
+The base class for Trace SDK errors — think a flush that timed out, or a full
+buffer while a terminal event is being preserved. Subclass of `ValarError`.
+
+## TraceHTTPError
+
+Raised when the Trace API responds with an HTTP error. Subclass of `TraceError`.
+
+| Attribute     | Type           | Description                 |
+| ------------- | -------------- | --------------------------- |
+| `status_code` | `int`          | HTTP status code.           |
+| `response`    | `dict \| None` | Parsed error response body. |
+
+## TraceNotFoundError
+
+Raised when no Trace can be found for the current API key (HTTP 404). Because it
+subclasses `TraceHTTPError`, it carries `status_code` and `response`.
+
+## InferenceError
+
+The base class for [inference](/traces-sdk-inference) wrapper errors. It fires,
+for example, when `stream=True` is passed (unsupported in v0) or when no API key
+is configured. Subclass of `ValarError`.
+
+## InferenceHTTPError
+
+Raised when a ValarAI inference endpoint returns a non-2xx response. Subclass of
+`InferenceError`.
+
+| Attribute     | Type           | Description                 |
+| ------------- | -------------- | --------------------------- |
+| `status_code` | `int`          | HTTP status code.           |
+| `response`    | `dict \| None` | Parsed error response body. |

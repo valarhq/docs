@@ -1,0 +1,173 @@
+---
+title: "Image Input"
+description: "Pass images to multimodal models through the Responses, Chat Completions, or Messages APIs"
+---
+
+ValarAI supports image inputs on multimodal base models. You can pass an image either as a base64 data URI or as an HTTP(S) URL.
+
+## Supported models
+
+Multimodal capability varies by model. The authoritative list lives on the [Models](/models) page — any row marked in the **Image** column accepts the content blocks below. Sending image input to a model that isn't multimodal returns `400` with `model '<id>' does not support image input`.
+
+## Limits
+
+* **Up to 20 images** in a single request.
+* **Up to 20 MB per image.** This cap applies to the raw image bytes, not the base64-encoded string length.
+* **Formats:** JPEG, PNG, WebP, GIF.
+* **No cap on pixel dimensions.** The 20 MB byte limit is the practical bound; the model may resize or tile very large dimensions before decoding.
+* **URL images** must use `http://` or `https://` and be reachable over the public internet. If ValarAI can't retrieve a URL within 10 s, the request fails with `400`.
+
+## Responses API
+
+Add an `input_image` block to a message's `content` array. Its `image_url` may hold either a data URI or a public URL.
+
+```python theme={null}
+from openai import OpenAI
+
+client = OpenAI(base_url="https://api.valarhq.ai/v1", api_key="YOUR_KEY")
+
+response = client.responses.create(
+    model="moonshotai/Kimi-K2.6",
+    input=[
+        {
+            "role": "user",
+            "content": [
+                {"type": "input_text", "text": "What's in this image?"},
+                {
+                    "type": "input_image",
+                    "image_url": "https://example.com/cat.jpg",
+                },
+            ],
+        }
+    ],
+    background=True,
+)
+```
+
+The same call using a base64 data URI:
+
+```python theme={null}
+import base64, pathlib
+
+b64 = base64.b64encode(pathlib.Path("cat.jpg").read_bytes()).decode()
+data_uri = f"data:image/jpeg;base64,{b64}"
+
+response = client.responses.create(
+    model="moonshotai/Kimi-K2.6",
+    input=[
+        {
+            "role": "user",
+            "content": [
+                {"type": "input_text", "text": "What's in this image?"},
+                {"type": "input_image", "image_url": data_uri},
+            ],
+        }
+    ],
+    background=True,
+)
+```
+
+The `detail` field accepts `"auto"`, `"low"`, or `"high"`.
+
+## Chat Completions API
+
+Use OpenAI's standard `image_url` content part.
+
+```python theme={null}
+response = client.chat.completions.create(
+    model="moonshotai/Kimi-K2.6",
+    messages=[
+        {
+            "role": "user",
+            "content": [
+                {"type": "text", "text": "What's in this image?"},
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": "https://example.com/cat.jpg",
+                        "detail": "auto",
+                    },
+                },
+            ],
+        }
+    ],
+)
+```
+
+That same `url` field also takes data URIs:
+
+```python theme={null}
+"image_url": {"url": f"data:image/jpeg;base64,{b64}"}
+```
+
+## Messages API (Anthropic)
+
+Use the Anthropic `image` content block, which supports both the `base64` and `url` source types.
+
+```python theme={null}
+import anthropic
+
+client = anthropic.Anthropic(
+    base_url="https://api.valarhq.ai",
+    api_key="YOUR_KEY",
+)
+
+# URL source
+response = client.messages.create(
+    model="moonshotai/Kimi-K2.6",
+    max_tokens=1024,
+    messages=[
+        {
+            "role": "user",
+            "content": [
+                {
+                    "type": "image",
+                    "source": {"type": "url", "url": "https://example.com/cat.jpg"},
+                },
+                {"type": "text", "text": "What's in this image?"},
+            ],
+        }
+    ],
+)
+
+# Base64 source
+response = client.messages.create(
+    model="moonshotai/Kimi-K2.6",
+    max_tokens=1024,
+    messages=[
+        {
+            "role": "user",
+            "content": [
+                {
+                    "type": "image",
+                    "source": {
+                        "type": "base64",
+                        "media_type": "image/jpeg",
+                        "data": b64,  # raw base64 string, no data: prefix
+                    },
+                },
+                {"type": "text", "text": "What's in this image?"},
+            ],
+        }
+    ],
+)
+```
+
+## Error cases
+
+| Condition                                          | Status | Message                                              |
+| -------------------------------------------------- | ------ | ---------------------------------------------------- |
+| `model` is not multimodal                          | 400    | `model '<id>' does not support image input`          |
+| More than 20 images in one request                 | 400    | `too many images: maximum 20 images per request`     |
+| Image larger than 20 MB decoded                    | 400    | `image too large: exceeds maximum of ... bytes`      |
+| Unsupported MIME type                              | 400    | `unsupported image type ...`                         |
+| URL scheme not http/https                          | 400    | `unsupported URL scheme ...`                         |
+| URL not reachable from the public internet         | 400    | `blocked: ...`                                       |
+| URL returns non-200 or times out (10 s)            | 400    | `failed to download image: ...`                      |
+| Data URI declared MIME does not match actual bytes | 400    | `declared type ... does not match detected type ...` |
+
+## Notes
+
+* When you already hold the image bytes, a base64 data URI is usually quicker than pointing at a URL.
+* ValarAI does not cache image bytes between requests.
+* On a multimodal base model that also offers LoRA support, you can use image inputs and LoRAs together (see [LoRAs](/loras)).

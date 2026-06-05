@@ -1,0 +1,71 @@
+---
+title: "Completion Windows"
+description: "How completion windows map to typical agent trajectory durations"
+---
+
+ValarAI is tuned around throughput and cost efficiency rather than the latency of any individual turn. In agentic settings, the figure that counts is the wall-clock time for an entire trajectory to run end to end, not the round-trip speed of a single call.
+
+Pick the completion window that fits how much trajectory wall-clock time your workload can absorb.
+
+## Completion windows at a glance
+
+| Window     | Avg. turn time | Typical use case                   | Price vs `asap` |
+| ---------- | -------------- | ---------------------------------- | --------------- |
+| `asap`     | Immediate      | Interactive UIs, human-in-the-loop | —               |
+| `priority` | \~1 min        | Latency-sensitive agent loops      | \~50% lower     |
+| `standard` | \~5 min        | Cost-optimized agents              | \~65% lower     |
+| `flex`     | best-effort    | Batch processing, evals, offline   | \~80% lower     |
+
+<Note>
+  Real-world turn times depend on the particular workload and the model you select.
+</Note>
+
+Every model-and-window price combination is published on the [Pricing](/pricing) page.
+
+## Completion window details
+
+### `standard`
+
+This is the default window wherever a model supports it. It runs on ValarAI's
+maximum-efficiency serving stack and aims for roughly a five-minute average turn
+time across a balanced workload. The majority of ValarAI's published prices
+reference this window.
+
+### `priority`
+
+The most tightly scheduled tier ValarAI offers. In return for a higher per-token rate, it aims for a lower average turn time than `standard` (around 1 minute rather than ~5 on a balanced workload). Reach for `priority` on latency-sensitive agent loops in which one turn directly feeds the next, and where adding several minutes per turn would noticeably stretch out the overall trajectory.
+
+### `flex`
+
+Runs your work whenever compute is least expensive, such as overnight or during off-peak hours, with no specific response-time target. It suits batch and non-agentic jobs. Requires `background=True`.
+
+### `asap`
+
+Executes right away on our fastest hardware in a latency-optimized setup. This tier isn't where ValarAI focuses its optimization — it exists as a convenience and is priced in line with other model API providers.
+
+## How to set completion windows
+
+Pass `metadata.completion_window` on the request:
+
+```py theme={null}
+response = client.responses.create(
+    model="zai-org/GLM-5.1-FP8",
+    input="Explain the key ideas behind transformers.",
+    background=True,
+    metadata={
+        "completion_window": "priority"
+    }
+)
+```
+
+Accepted values are `"asap"`, `"priority"`, `"standard"`, and `"flex"`.
+
+### Default behavior
+
+When `completion_window` is left off, the request falls back to `standard`. If `standard` is not <a href="/pricing">available</a>
+for the chosen model, <Tooltip tip="Responses API with `background=True`, or the Batch API">async</Tooltip> requests fall back to `flex` where it exists, and <Tooltip tip="Responses without `background=True`,
+Chat Completions, Messages, or async requests using models without `flex` available">every other request</Tooltip> falls back to `asap`.
+
+Explicitly choosing a window the model does not support causes the request to fail with `400 invalid_request_error`. The accompanying error
+message lists the model's actual supported windows. The
+[Pricing](/pricing) page also keeps a current support matrix.

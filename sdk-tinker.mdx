@@ -1,0 +1,136 @@
+---
+title: "Tinker"
+description: "Run ValarAI inference inside Tinker RL/training loops with valar.ValarTokenCompleter and get_tinker_checkpoint_signed_url"
+---
+
+The helpers under `valar.tinker` wire ValarAI inference into a
+[Tinker](https://tinker-docs.thinkingmachines.ai/) RL or training loop. They
+adapt Tinker's token-level sampling interface onto ValarAI's raw-token
+Responses path, letting rollouts run against ValarAI-hosted models — with an
+optional LoRA adapter — while logprobs are streamed back to your training code.
+
+<Note>
+  Using these helpers requires `tinker-cookbook` to be installed alongside
+  `valar-sdk`. If you construct a `ValarTokenCompleter` and `tinker-cookbook`
+  isn't available, [`valar.InferenceError`](/traces-sdk-errors) is raised.
+</Note>
+
+## valar.ValarTokenCompleter
+
+A Tinker `TokenCompleter` backed by ValarAI's raw-token Responses API. Build
+one from a model plus sampling settings, then `await` it on tokenized prompts
+to receive the sampled tokens together with their logprobs.
+
+```python theme={null}
+import valar
+
+completer = valar.ValarTokenCompleter(
+    model="meta-llama/Llama-3.1-8B-Instruct",
+    max_tokens=256,
+    temperature=0.7,
+)
+
+result = await completer(model_input)
+print(result.tokens)         # list[int] of sampled token ids
+print(result.maybe_logprobs) # list[float] | None
+print(result.stop_reason)    # e.g. "stop", "length"
+```
+
+### Constructor
+
+```python theme={null}
+ValarTokenCompleter(
+    *,
+    model: str,
+    max_tokens: int,
+    temperature: float = 1.0,
+    top_p: float = 1.0,
+    lora: str | None = None,
+    tinker_lora_signed_url: str | None = None,
+    adapter_config: Mapping[str, Any] | str | None = None,
+    tinker_lora_name: str | None = None,
+    metadata: Mapping[str, str] | None = None,
+    timeout: float | None = None,
+    trace: valar.Trace | None = None,
+    request_logprobs: bool = True,
+)
+```
+
+| Parameter                | Description                                                                                                                                                                         |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `model`                  | **Required.** Model id to sample from. Raises `ValueError` if empty.                                                                                                                |
+| `max_tokens`             | **Required.** Max tokens to generate; must be `> 0` (`ValueError` otherwise).                                                                                                       |
+| `temperature`            | Sampling temperature. Default `1.0`.                                                                                                                                                |
+| `top_p`                  | Nucleus sampling cutoff. Default `1.0`.                                                                                                                                             |
+| `lora`                   | Name of a ValarAI-registered LoRA adapter to apply. Mutually exclusive with `tinker_lora_signed_url`.                                                                               |
+| `tinker_lora_signed_url` | Signed URL to a Tinker checkpoint archive (see [`get_tinker_checkpoint_signed_url`](#get-tinker-checkpoint-signed-url)). Requires `adapter_config`. Mutually exclusive with `lora`. |
+| `adapter_config`         | LoRA adapter config as a mapping or JSON string. **Required** when `tinker_lora_signed_url` is set.                                                                                 |
+| `tinker_lora_name`       | Optional human-readable name attached to the Tinker LoRA.                                                                                                                           |
+| `metadata`               | Extra string metadata forwarded on each request.                                                                                                                                    |
+| `timeout`                | Per-request timeout in seconds.                                                                                                                                                     |
+| `trace`                  | A [`valar.Trace`](/traces-sdk) used to attribute requests to a trace.                                                                                                               |
+| `request_logprobs`       | Whether to request logprobs from the server. Default `True`.                                                                                                                        |
+
+A `ValueError` is raised if you supply both `lora` and
+`tinker_lora_signed_url`, or if you set `tinker_lora_signed_url` without an
+accompanying `adapter_config`.
+
+### `async __call__(model_input, stop=None)`
+
+```python theme={null}
+async def __call__(model_input, stop=None) -> TokensWithLogprobs
+```
+
+* `model_input` — must provide a callable `.to_ints()` that returns the prompt
+  token ids (Tinker's `ModelInput`). If `to_ints` isn't callable, a token isn't
+  an integer, or the prompt is empty, a `TypeError`/`ValueError` is raised.
+* `stop` — an optional stop condition. An `int` is wrapped into a
+  single-element list, a tuple is converted to a list, and anything else is
+  passed through as-is.
+
+The return value is a Tinker `TokensWithLogprobs`:
+
+\| Field            | Description                                                                                                |
+\| ---------------- | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+\| `tokens`         | `list[int]` — the sampled token ids.                                                                       |
+\| `maybe_logprobs` | `list[float]                                                                                               | None`— per-token logprobs, or`None` when the response carried none. |
+\| `stop_reason`    | The model's stop reason (e.g. `"stop"`, `"length"`), falling back to the response `status` or `"unknown"`. |
+
+When the ValarAI response is malformed — `output_text` missing, `token_ids`
+missing or non-integer, or token and logprob lengths that don't line up — a
+[`valar.InferenceError`](/traces-sdk-errors) is raised, with the offending
+response attached as `exc.response`.
+
+## get\_tinker\_checkpoint\_signed\_url
+
+```python theme={null}
+get_tinker_checkpoint_signed_url(service_client, tinker_path: str) -> str
+```
+
+Turns a Tinker checkpoint path into a signed archive URL that you can hand to
+`ValarTokenCompleter` as `tinker_lora_signed_url`. Under the hood it invokes the
+Tinker service client's REST client
+(`get_checkpoint_archive_url_from_tinker_path`) and pulls the URL out of the
+result — accepting either a bare string or an object/mapping carrying `url`,
+`signed_url`, `archive_url`, or `checkpoint_archive_url`.
+
+| Parameter        | Description                                                |
+| ---------------- | ---------------------------------------------------------- |
+| `service_client` | A Tinker `ServiceClient` (exposes `create_rest_client()`). |
+| `tinker_path`    | The Tinker checkpoint path to resolve.                     |
+
+If no URL can be found in the response, [`valar.InferenceError`](/traces-sdk-errors)
+is raised.
+
+```python theme={null}
+import valar
+
+signed_url = valar.get_tinker_checkpoint_signed_url(service_client, tinker_path)
+
+completer = valar.ValarTokenCompleter(
+    model="meta-llama/Llama-3.1-8B-Instruct",
+    max_tokens=256,
+    tinker_lora_signed_url=signed_url,
+    adapter_config={"r": 16, "alpha": 32},
+)
+```

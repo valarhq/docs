@@ -1,0 +1,286 @@
+---
+title: "Traces"
+description: "The valar.trace API for capturing agent and task trajectories"
+---
+
+Think of `valar.trace` as a flight recorder for trajectories that run long —
+agents, evaluations, and background tasks. You keep control of the work loop;
+ValarAI captures the timeline events, spans, agent metadata, and the
+[inference calls](/traces-sdk-inference) tied to them. This page is the API
+reference; if you want a walkthrough first, start with the
+[Traces guide](/traces-sdk).
+
+```python theme={null}
+import valar
+
+trace = valar.trace.init(name="overnight-eval")
+
+with valar.trace.agent("solver", name="Solver", role="executor"):
+    with valar.trace.span("call-model"):
+        valar.trace.event("model.called", payload={"model": "zai-org/GLM-5"})
+
+valar.trace.complete(message="done")
+print(valar.trace.id(), valar.trace.dashboard_url())
+```
+
+## Two ways to call
+
+Each operation comes in two flavors:
+
+* **Module-level helpers** — `valar.trace.event(...)`, `valar.trace.span(...)`,
+  and so on — operate on the **current Trace**, which is the process-global
+  Trace established by the latest `init()`.
+* **Methods on the `Trace` object** that `init()` hands back operate on that
+  particular Trace.
+
+The behavior is the same either way; the module-level helpers simply spare you
+from passing the `Trace` object around your code.
+
+<Note>
+  The current Trace lives at process scope, whereas span and agent contexts rely
+  on Python `contextvars` and therefore track lexical/async execution context. A
+  bare `threading.Thread` won't inherit the active span/agent, though it can
+  still rely on the current Trace for inference correlation.
+</Note>
+
+## valar.trace.init
+
+```python theme={null}
+def init(
+    name: str | None = None,
+    *,
+    version: int | None = None,
+    metadata: dict | None = None,
+    trace_id: str | None = None,
+) -> Trace | NoopTrace
+```
+
+Starts a new Trace (or attaches to one that already exists) and promotes it to
+the current Trace for the process.
+
+| Parameter   | Default | Description                                                                              |
+| ----------- | ------- | ---------------------------------------------------------------------------------------- |
+| `name`      | `None`  | Needed to **create** a Trace; emitted as `trace.started`. Not needed when attaching.     |
+| `version`   | `None`  | Optional positive integer; increment it when the harness, prompts, or model mix shift.   |
+| `metadata`  | `None`  | JSON object (≤ 64 KiB) attached to the Trace.                                            |
+| `trace_id`  | `None`  | Attach to an existing Trace rather than creating one. Falls back to `VALAR_TRACE_ID`.    |
+
+**Returns** a [`Trace`](#the-trace-object). If `VALAR_API_KEY` is missing it
+returns a no-op Trace instead (covered below).
+
+Attaching (with `trace_id=` or `VALAR_TRACE_ID`) neither emits a second
+`trace.started` nor requires `name`/`version`.
+
+### No-op when unauthenticated
+
+With `VALAR_API_KEY` unset, `init()` hands back a `NoopTrace`: nothing is
+created, no network traffic occurs, and both `id()` and `dashboard_url()` yield
+`None`. Every method becomes a harmless no-op, which lets the identical script
+run on your machine without credentials. (The inference API still needs
+`VALAR_API_KEY`.)
+
+## The Trace object
+
+The `Trace` returned by `init()` carries these attributes:
+
+| Attribute       | Type          | Description                            |
+| --------------- | ------------- | -------------------------------------- |
+| `id`            | `str`         | Trace id (`None` on a no-op Trace).    |
+| `dashboard_url` | `str \| None` | Dashboard URL for the Trace.           |
+| `status`        | `str \| None` | Latest known terminal/lifecycle status.|
+| `name`          | `str \| None` | Trace name.                            |
+| `version`       | `int \| None` | Trace version.                         |
+| `metadata`      | `dict`        | Metadata supplied at creation.         |
+
+It offers the same operations as the module-level helpers listed below
+(`event`, `span`, `agent`, `error`, `complete`, `fail`, `flush`, `headers`).
+
+## event
+
+```python theme={null}
+def event(
+    kind: str,
+    level: str = "info",
+    message: str | None = None,
+    payload: dict | None = None,
+    agent_id: str | None = None,
+    agent_name: str | None = None,
+    agent_role: str | None = None,
+    span_id: str | None = None,
+    parent_span_id: str | None = None,
+    error_type: str | None = None,
+    occurred_at: str | None = None,
+    sequence_id: int | None = None,
+) -> None
+```
+
+Logs a timestamped event against the current span/agent (taken from context
+when you don't pass it). Events are buffered locally and flushed by a
+background thread, so `event()` validates the input, enqueues it fast, and
+won't raise network errors.
+
+| Parameter                                | Default  | Description                                                             |
+| ---------------------------------------- | -------- | ----------------------------------------------------------------------- |
+| `kind`                                   | required | Event kind/name (≤ 128 characters, non-empty).                          |
+| `level`                                  | `"info"` | One of `debug`, `info`, `warn`, `error`.                                |
+| `message`                                | `None`   | Human-readable message (≤ 4 KiB).                                       |
+| `payload`                                | `None`   | JSON object (≤ 64 KiB).                                                 |
+| `agent_id` / `agent_name` / `agent_role` | `None`   | Override the active agent; default from context or `VALAR_AGENT_*` env. |
+| `span_id` / `parent_span_id`             | `None`   | Override span placement; default from the active span.                  |
+| `error_type`                             | `None`   | Error class name for error events.                                      |
+| `occurred_at`                            | `None`   | RFC3339 timestamp with timezone; defaults to now.                       |
+| `sequence_id`                            | `None`   | Explicit monotonic ordering id; auto-assigned when omitted.             |
+
+## span
+
+```python theme={null}
+def span(
+    span_name: str | None = None,
+    *,
+    message: str | None = None,
+    payload: dict | None = None,
+    agent_id: str | None = None,
+    name: str | None = None,
+    role: str | None = None,
+    agent_name: str | None = None,
+    agent_role: str | None = None,
+    span_id: str | None = None,
+    parent_span_id: str | None = None,
+) -> ContextManager
+```
+
+Hands back a context manager that emits `span.started` on entry and
+`span.completed` on exit (or `span.failed`, carrying the exception type). Spans
+nest automatically: open one inside another and it becomes the child. Supplying
+`agent_id`/`name`/`role` also activates an agent context for the span.
+
+```python theme={null}
+with trace.span("draft-review", name="Reviewer", role="reviewer"):
+    trace.event("review.drafted")
+```
+
+## agent
+
+```python theme={null}
+def agent(
+    agent_id: str,
+    *,
+    name: str | None = None,
+    role: str | None = None,
+) -> ContextManager
+```
+
+Hands back a context manager that tags every event and inference call inside it
+as belonging to a named agent. The first positional argument, `agent_id`, is an
+SDK-internal slug; `name` is the human-readable label, and `role` is the cohort
+taxonomy.
+
+```python theme={null}
+with trace.agent("reviewer", name="Reviewer", role="reviewer"):
+    ...
+```
+
+## error
+
+```python theme={null}
+def error(
+    error_type: str | None = None,
+    message: str | None = None,
+    payload: dict | None = None,
+) -> None
+```
+
+Records an error-level `trace.error` event without ending the Trace.
+
+## complete
+
+```python theme={null}
+def complete(message: str | None = None, payload: dict | None = None) -> None
+```
+
+Emits `trace.completed` and flushes. Make sure to call `complete()` (or
+`fail()`) before the controller process exits — terminal status follows a
+first-terminal-wins rule, and any events after a terminal event are
+best-effort. This call blocks and raises delivery errors.
+
+## fail
+
+```python theme={null}
+def fail(
+    error_type: str = "harness_error",
+    message: str | None = None,
+    payload: dict | None = None,
+) -> None
+```
+
+Emits `trace.failed` and flushes. `error_type` cannot be empty. Blocks and
+raises delivery errors.
+
+```python theme={null}
+trace = valar.trace.init(name="task")
+try:
+    do_work()
+    trace.complete(message="ok")
+except Exception as exc:
+    trace.fail(error_type=exc.__class__.__name__, message=str(exc))
+    raise
+```
+
+## flush
+
+```python theme={null}
+def flush(timeout: float | None = None) -> None
+```
+
+Blocks until every buffered event has been delivered, raising on delivery
+failure. A bounded best-effort flush does run automatically at process exit,
+but don't treat it as a replacement for `complete()`/`fail()` when terminal
+state is product-critical.
+
+## headers
+
+```python theme={null}
+def headers(existing: Mapping[str, str] | None = None) -> dict[str, str]
+```
+
+Returns a copy of `existing` with the `X-Valar-Trace-Id` header set to the
+current Trace id. Reach for this to correlate a raw HTTP/OpenAI client with the
+Trace when the [inference wrappers](/traces-sdk-inference) aren't an option.
+
+## Module helpers
+
+```python theme={null}
+def id() -> str | None
+def dashboard_url() -> str | None
+```
+
+`valar.trace.id()` and `valar.trace.dashboard_url()` return the current Trace's
+id and dashboard URL — or `None` when there is no current Trace or it is a
+no-op.
+
+## Environment variables
+
+| Variable           | Purpose                                                                                   |
+| ------------------ | ----------------------------------------------------------------------------------------- |
+| `VALAR_API_KEY`    | Required for real Trace events and inference. Use an org-bearing `sk_...` key.            |
+| `VALAR_MODE`       | Selects the SDK routing mode (`prod` default; `dev`, `staging`).                          |
+| `VALAR_API_URL`    | Overrides the REST API URL directly.                                                      |
+| `VALAR_TRACE_ID`   | Attaches to an existing Trace instead of creating one.                                    |
+| `VALAR_AGENT_ID`   | Default event `agent_id`.                                                                 |
+| `VALAR_AGENT_NAME` | Default event `agent_name`.                                                               |
+| `VALAR_AGENT_ROLE` | Default event `agent_role`.                                                               |
+| `VALAR_TRACE_DEBUG`| Enables warnings for no-op mode, swallowed background-flush failures, and dropped events. |
+
+## Validation and delivery semantics
+
+* **Validation:** `kind` ≤ 128 characters; `level` is one of
+  `debug`/`info`/`warn`/`error`; `message` ≤ 4 KiB; `payload` and `metadata`
+  must be JSON objects ≤ 64 KiB; `occurred_at` must be RFC3339 with a timezone;
+  `version` must be a positive integer.
+* **Buffering:** events land in a bounded local buffer that a background flusher
+  drains roughly once a second. If the buffer fills, the oldest non-terminal
+  events go first and an `sdk.events_dropped` notice fires; terminal events
+  (`trace.started`/`completed`/`failed`) are always preserved.
+* **Blocking calls:** `flush()`, `complete()`, and `fail()` block and raise
+  delivery errors (`valar.TraceError` and its subclasses). `event()` never
+  raises network errors.

@@ -1,0 +1,66 @@
+---
+title: "Using OpenCode with ValarAI"
+description: "Point OpenCode at ValarAI as its LLM backend."
+---
+
+[OpenCode](https://opencode.ai) is an open-source coding agent. Since ValarAI speaks the OpenAI-compatible protocol, wiring the two together is nothing more than a configuration tweak.
+
+## Install
+
+Grab OpenCode using the steps at [opencode.ai](https://opencode.ai). Most people install it with:
+
+```bash theme={null}
+curl -fsSL https://opencode.ai/install | bash
+```
+
+## Get your API key
+
+Create an account at [ValarAI](https://app.valarhq.ai) and generate an API key.
+
+## Configure
+
+Set up your OpenCode config so ValarAI is the default provider:
+
+```bash theme={null}
+mkdir -p ~/.config/opencode
+```
+
+Drop the following into `~/.config/opencode/opencode.jsonc`:
+
+```jsonc theme={null}
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "valar/zai-org/GLM-5.1-FP8", // model for heavy lifting
+  "small_model": "valar/openai/gpt-oss-120b", // model for lightweight tasks
+  "provider": {
+    "valar": {
+      "npm": "@ai-sdk/openai-compatible",
+      "options": {
+        "baseURL": "https://api.valarhq.ai/v1",
+        "apiKey": "YOUR_VALAR_API_KEY",
+      },
+      "models": {
+        "zai-org/GLM-5.1-FP8": { "name": "GLM-5.1" },
+        "openai/gpt-oss-120b": { "name": "gpt-oss-120b" },
+        "MiniMaxAI/MiniMax-M2.7": { "name": "MiniMax-M2.7" },
+        "google/gemma-4-31B-it": { "name": "Gemma 4 31B IT" },
+      },
+    },
+  },
+}
+```
+
+Swap in the key you just generated wherever `YOUR_VALAR_API_KEY` appears.
+
+## Run
+
+```bash theme={null}
+opencode
+```
+
+With OpenCode running, type `/models`, search for "ValarAI", and jump between any of the models you defined in your config.
+
+## Tips
+
+* **Where to go next** — check out OpenCode's [Usage guide](https://opencode.ai/docs/#usage).
+* **Adding models** — each time ValarAI ships a new model, list it under `provider.valar.models`.

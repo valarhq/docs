@@ -1,0 +1,198 @@
+---
+title: "API Support Matrix"
+description: "Where each ValarAI inference API stands today, plus what's on the way"
+---
+
+ValarAI exposes inference endpoints that mirror the [**OpenAI Responses API**](#responses-api), the [**OpenAI Chat Completions API**](#chat-completions-api), and the [**Anthropic Messages API**](#messages-api).
+The same [models](/models) and [completion windows](/completion-windows) are accepted across all three inference APIs.
+
+On top of those, ValarAI provides a [**Batch API**](#batch-api) that processes large volumes of [Responses API](#responses-api) requests as a single asynchronous job.
+
+| API                         | Endpoint                    | Maturity                            |
+| --------------------------- | --------------------------- | ----------------------------------- |
+| OpenAI **Responses**        | `POST /v1/responses`        | <Badge color="green">Stable</Badge> |
+| OpenAI **Chat Completions** | `POST /v1/chat/completions` | <Badge color="green">Stable</Badge> |
+| Anthropic **Messages**      | `POST /v1/messages`         | <Badge color="blue">Beta</Badge>    |
+| **Batch**                   | `POST /v1/batches`          | <Badge color="green">Stable</Badge> |
+
+***
+
+## Responses API
+
+<div className="flex flex-wrap items-center gap-2">
+  <Badge color="green">Recommended</Badge>
+  <Badge color="blue">OpenAI Responses format</Badge>
+  <Badge color="blue">OpenAI SDK compatible</Badge>
+
+  <a href="/api-reference/responses-api/create-a-response" className="inline-flex items-center gap-1 rounded-full border border-gray-200 px-2.5 py-1 text-xs font-medium no-underline transition-colors hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800">
+    API reference <span aria-hidden="true">→</span>
+  </a>
+</div>
+
+### Supported features
+
+| Feature                  | Details                                                                                                                                                              |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Core parameters**      | `model`, `input` (string or message array), `max_output_tokens`, `temperature`, `top_p`, `user`, `prompt_cache_key`                                                  |
+| **Structured outputs**   | `text.format` with `type: "text"` or `type: "json_schema"`                                                                                                           |
+| **Reasoning**            | `reasoning.effort` (`none` / `minimal` / `low` / `medium` / `high` / `xhigh`), `reasoning.generate_summary` (`auto` / `concise` / `detailed`)                        |
+| **Function tools**       | `tools` with `type: "function"` — client-side function calling with `name`, `description`, `parameters`, `strict`                                                    |
+| **Custom tools**         | `tools` with `type: "custom"`                                                                                                                                        |
+| **Tool choice**          | `tool_choice`: `"none"`, `"auto"`, `"required"`, or a specific function/custom tool                                                                                  |
+| **Background mode**      | `background: true` returns `202` immediately; poll with `GET /v1/responses/{id}`                                                                                     |
+| **Prompt cache routing** | `prompt_cache_key` is an optional routing hint for requests that share a large prompt prefix                                                                         |
+| **Image input**          | `input_image` content blocks on [multimodal models](/models). Non-multimodal models accept text only.                                                                |
+| **Output logprobs**      | `include: ["message.output_text.logprobs"]` returns one logprob per output token (best effort; omitted for models served via a proxy that does not return logprobs). |
+
+### Not yet supported
+
+| Feature                   | Notes                                                                                                                                                                                                                                                                   |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Streaming**             | `stream: true` is rejected. Every response comes back as one JSON object.                                                                                                                                                                                               |
+| **Instructions**          | `instructions` is unsupported. Put system messages straight into `input`.                                                                                                                                                                                               |
+| **Conversation chaining** | `previous_response_id` and `conversation` are unsupported. Resend the full input on each call.                                                                                                                                                                          |
+| **Prompt templates**      | The `prompt` parameter is unsupported.                                                                                                                                                                                                                                   |
+| **Server-side tools**     | `web_search`, `file_search`, `code_interpreter`, `computer_use`, `mcp`, `image_generation`, `shell`, `apply_patch` are unsupported.                                                                                                                                     |
+| **Multimodal input**      | Audio and file input blocks are unsupported. Image input works on multimodal models (see above).                                                                                                                                                                        |
+| **Include**               | Accepted for compatibility when passed as an array of strings. A request is rejected if it includes `reasoning.encrypted_content`, `web_search_call.action.sources`, `code_interpreter_call.outputs`, `computer_call_output.output.image_url`, or `file_search_call.results`. |
+| **Truncation**            | `"disabled"` is the only accepted value; custom truncation strategies are unsupported.                                                                                                                                                                                  |
+| **Parallel tool calls**   | `parallel_tool_calls` is unsupported.                                                                                                                                                                                                                                   |
+| **json\_object format**   | `text.format.type: "json_object"` is unsupported. Reach for `"json_schema"` instead.                                                                                                                                                                                    |
+| **Service tier**          | `"auto"` is the only accepted value. Use `metadata.completion_window` to govern response timing instead.                                                                                                                                                                |
+| **Delete / cancel**       | `DELETE /v1/responses/{id}` and the cancel endpoints are not implemented.                                                                                                                                                                                               |
+
+***
+
+## Chat Completions API
+
+<div className="flex flex-wrap items-center gap-2">
+  <Badge color="blue">OpenAI Chat Completions format</Badge>
+  <Badge color="blue">OpenAI SDK compatible</Badge>
+
+  <a href="/api-reference/chat-completions-api/create-a-chat-completion" className="inline-flex items-center gap-1 rounded-full border border-gray-200 px-2.5 py-1 text-xs font-medium no-underline transition-colors hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800">
+    API reference <span aria-hidden="true">→</span>
+  </a>
+</div>
+
+### Supported features
+
+| Feature                 | Details                                                                                                                                                                                                                  |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Core parameters**     | `model`, `messages`, `max_completion_tokens`, `temperature`, `top_p`, `user`                                                                                                                                             |
+| **Message roles**       | `system`, `user`, `assistant`, `tool`, `function` (deprecated), `developer`                                                                                                                                              |
+| **Structured outputs**  | `response_format` with `type: "text"`, `"json_object"`, or `"json_schema"`                                                                                                                                               |
+| **Reasoning**           | `reasoning_effort` (`none` / `minimal` / `low` / `medium` / `high` / `xhigh`)                                                                                                                                            |
+| **Function tools**      | `tools` with `type: "function"` — standard `{type, function: {name, description, parameters, strict}}` format                                                                                                            |
+| **Custom tools**        | `tools` with `type: "custom"`                                                                                                                                                                                            |
+| **Tool choice**         | `tool_choice`: `"none"`, `"auto"`, `"required"`, or a specific function/custom tool                                                                                                                                      |
+| **Parallel tool calls** | `parallel_tool_calls` is passed through                                                                                                                                                                                  |
+| **Metadata**            | `metadata` with string key-value pairs, including [`completion_window`](/completion-windows) and [`completion_webhook`](/webhooks)                                                                                       |
+| **Streaming**           | `stream: true` returns Server-Sent Events (`chat.completion.chunk`); `stream_options.include_usage` adds a final usage chunk. Reasoning is streamed as `reasoning_content` deltas and tool calls are emitted atomically. |
+| **Image input**         | `image_url` content parts on [multimodal models](/models). Non-multimodal models accept text only.                                                                                                                       |
+
+### Not yet supported
+
+| Feature                | Notes                                                                                                                             |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| **Multiple choices**   | `n` is required to be `1`.                                                                                                        |
+| **Multimodal content** | Audio (`input_audio`) content parts are unsupported. Image (`image_url`) input works on multimodal models (see above).            |
+| **Sampling controls**  | `frequency_penalty`, `presence_penalty`, `logit_bias`, `stop`, `seed`, `top_logprobs`, `logprobs`, `verbosity` are unsupported.   |
+| **Audio modality**     | Neither `audio` nor `modalities: ["audio"]` is supported.                                                                         |
+| **Predicted output**   | `prediction` is unsupported.                                                                                                       |
+| **Web search**         | `web_search_options` is unsupported.                                                                                              |
+| **Service tier**       | `"auto"` is the only accepted value.                                                                                              |
+| **CRUD endpoints**     | The `GET`, `POST`, and `DELETE` operations on stored completions are not implemented.                                             |
+| **Deprecated fields**  | `max_tokens`, `functions`, and `function_call` are rejected; switch to their modern replacements.                                 |
+
+### Response notes
+
+* A response always carries exactly one choice (`n=1`).
+* `finish_reason` is either `"stop"` or `"tool_calls"` — values such as `"length"` and `"content_filter"` are never returned.
+* Neither `system_fingerprint` nor `service_tier` appears in responses.
+* `logprobs` is always `null`.
+
+***
+
+## Messages API
+
+<div className="flex flex-wrap items-center gap-2">
+  <Badge color="blue">Anthropic Messages format</Badge>
+  <Badge color="blue">Anthropic SDK compatible</Badge>
+
+  <a href="/api-reference/messages-api/create-an-anthropic-message" className="inline-flex items-center gap-1 rounded-full border border-gray-200 px-2.5 py-1 text-xs font-medium no-underline transition-colors hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800">
+    API reference <span aria-hidden="true">→</span>
+  </a>
+</div>
+
+<Note>
+  **Beta**: The Messages API covers core text generation and image input, though
+  a number of Anthropic features (system prompts, extended thinking, tools, stop
+  sequences) aren't supported yet (see below).
+</Note>
+
+### Supported features
+
+| Feature                | Details                                                                                                                            |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| **Core parameters**    | `model`, `max_tokens`, `messages`                                                                                                  |
+| **Sampling**           | `temperature` (0–1), `top_p` (0–1)                                                                                                 |
+| **Structured outputs** | `output_config.format` with `type: "json_schema"`                                                                                  |
+| **Metadata**           | `metadata` with string key-value pairs, including [`completion_window`](/completion-windows) and [`completion_webhook`](/webhooks) |
+| **Image input**        | `image` content blocks on [multimodal models](/models). Non-multimodal models accept text only.                                    |
+
+### Not yet supported
+
+| Feature                | Notes                                                                                                                                |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| **Streaming**          | `stream: true` is rejected.                                                                                                          |
+| **System prompt**      | The `system` parameter is unsupported.                                                                                              |
+| **Extended thinking**  | `thinking` is unsupported.                                                                                                          |
+| **Tools**              | `tools` and `tool_choice` are taken for compatibility but do nothing — the model never sees them and can't call tools.              |
+| **Stop sequences**     | `stop_sequences` is unsupported.                                                                                                    |
+| **Top-K sampling**     | `top_k` is unsupported.                                                                                                             |
+| **Multimodal content** | Document and tool-result content blocks are unsupported. Image input works on multimodal models (see above).                        |
+| **Service tier**       | `service_tier` is unsupported.                                                                                                      |
+| **Inference geo**      | `inference_geo` is unsupported.                                                                                                     |
+| **Count tokens**       | `POST /v1/messages/count_tokens` is not implemented.                                                                                |
+| **Batches**            | `POST /v1/messages/batches` and its related endpoints are not implemented.                                                          |
+
+### Response notes
+
+* `stop_reason` is always `"end_turn"`; values like `"max_tokens"`, `"tool_use"`, and `"stop_sequence"` are never returned.
+* The response content is always a single `text` block — thinking blocks and tool-use blocks are not returned.
+* Cache-related usage fields (`cache_creation_input_tokens`, `cache_read_input_tokens`) are omitted.
+
+### Compatibility notes
+
+* Authentication uses `Authorization: Bearer <key>`; ValarAI does not accept the Anthropic `x-api-key` header. With the Anthropic SDK, supply your key through `auth_token` rather than `api_key`:
+
+```python theme={null}
+from anthropic import Anthropic
+
+client = Anthropic(
+    auth_token="YOUR_VALAR_API_KEY",
+    base_url="https://api.valarhq.ai",
+)
+```
+
+* The `anthropic-version` header is neither required nor inspected.
+* Errors come back in the OpenAI-style error envelope format.
+
+***
+
+## Batch API
+
+The Batch API processes large volumes of [Responses API](#responses-api) requests asynchronously. Each entry targets `/v1/responses` — batching `/v1/chat/completions` or `/v1/messages` isn't supported today. A single `POST /v1/batches` call accepts up to 100,000 requests; from there you poll `GET /v1/batches/{id}` for status and pull each result by its `custom_id`.
+
+For the full workflow see [Sending Requests at Scale](/requests_at_scale), and consult the [Batch API reference](/api-reference/batches-api/create-a-batch) for the request and response schemas.
+
+***
+
+## Cross-API behavior
+
+The following behaviors hold across every inference API surface:
+
+* **Streaming** — only the Chat Completions API supports `stream: true`, emitting Server-Sent Events (`chat.completion.chunk`); add `stream_options.include_usage` for a closing usage chunk. The Responses and Messages APIs don't stream (`stream: true` is rejected) — for long-running work, use `background: true` (Responses API) together with polling or [webhooks](/webhooks).
+* **Completion windows** — set `metadata.completion_window` to `"asap"`, `"priority"`, `"standard"`, or `"flex"` to steer scheduling and pricing. See [Completion Windows](/completion-windows) and [Pricing](/pricing).
+* **Webhooks** — set `metadata.completion_webhook` to get a POST once processing wraps up. See [Webhooks](/webhooks).
+* **Responses always stored** — `store: false` is unsupported.
