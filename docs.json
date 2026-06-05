@@ -1,11 +1,11 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "mint",
+  "theme": "aspen",
   "name": "ValarAI",
   "colors": {
-    "primary": "#2C4681",
-    "light": "#8BA2DD",
-    "dark": "#4F73C2"
+    "primary": "#0F766E",
+    "light": "#2DD4BF",
+    "dark": "#15A394"
   },
   "favicon": "/favicon.svg",
   "logo": {
@@ -13,8 +13,22 @@
     "dark": "/logo/dark.svg"
   },
   "fonts": {
-    "heading": { "family": "Geist" },
-    "body": { "family": "Geist" }
+    "heading": { "family": "Inter Tight", "weight": 600 },
+    "body": { "family": "Inter" }
+  },
+  "background": {
+    "color": {
+      "light": "#FBFEFE",
+      "dark": "#0B1416"
+    },
+    "decoration": "grid"
+  },
+  "appearance": {
+    "default": "system"
+  },
+  "styling": {
+    "eyebrows": "section",
+    "codeblocks": "system"
   },
   "navbar": {
     "primary": {
