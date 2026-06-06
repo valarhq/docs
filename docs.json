@@ -51,6 +51,7 @@
             "pages": [
               "index",
               "quickstart",
+              "inference-modes",
               "models",
               "pricing"
             ]
@@ -60,8 +61,18 @@
             "icon": "robot",
             "pages": [
               "agents",
-              "requests_at_scale",
-              "opencode"
+              "structured-outputs",
+              "requests_at_scale"
+            ]
+          },
+          {
+            "item": "Integrations",
+            "icon": "plug",
+            "pages": [
+              "opencode",
+              "integrations/langchain",
+              "integrations/vercel-ai",
+              "integrations/openai-agents"
             ]
           },
           {

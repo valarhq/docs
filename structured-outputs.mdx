@@ -1,0 +1,203 @@
+---
+title: "Structured outputs"
+description: "Constrain a model's response to a JSON schema so you get parseable, predictable JSON across Valar's APIs"
+---
+
+## What structured outputs are
+
+A structured output is a model response that is forced to match a [JSON Schema](https://json-schema.org/) you supply. Instead of asking for JSON in the prompt and hoping the model complies, you hand Valar the shape you want and the response comes back as JSON that conforms to it.
+
+Reach for structured outputs when the response feeds code rather than a human:
+
+- **Reliable parsing** — every response is valid JSON with the fields you declared, so `json.loads` never trips over prose, code fences, or trailing commentary.
+- **Extraction** — pull typed fields out of unstructured text, such as turning a support email into `{ category, priority, summary }`.
+- **Downstream automation** — route, store, or act on the result without a brittle post-processing step.
+
+Structured outputs are supported on all three of Valar's APIs. The field you set differs per API, but the JSON Schema you pass is the same.
+
+## Defining a schema per API
+
+Each tab points at the same base URL, `https://api.valarhq.ai/v1`, and authenticates with `Authorization: Bearer $VALAR_API_KEY`. The example extracts a support ticket into a fixed shape.
+
+<Tabs>
+  <Tab title="Responses">
+    On the [Responses API](/api-reference/responses-api/create-a-response), set `text.format` to a `json_schema` object. The schema lives directly under `schema`, alongside a `name` and `strict`.
+
+    <Note>
+      `text.format.type: "json_object"` is **not** supported on the Responses API. Use `json_schema` to constrain the output.
+    </Note>
+
+    ```python theme={null}
+    import json
+    from openai import OpenAI
+
+    client = OpenAI(
+        api_key="YOUR_VALAR_API_KEY",  # or rely on the OPENAI_API_KEY / VALAR_API_KEY env var
+        base_url="https://api.valarhq.ai/v1",
+    )
+
+    ticket_schema = {
+        "type": "object",
+        "properties": {
+            "category": {
+                "type": "string",
+                "enum": ["billing", "bug", "feature_request", "account", "other"],
+            },
+            "priority": {"type": "string", "enum": ["low", "medium", "high", "urgent"]},
+            "summary": {"type": "string"},
+        },
+        "required": ["category", "priority", "summary"],
+        "additionalProperties": False,
+    }
+
+    response = client.responses.create(
+        model="moonshotai/Kimi-K2.6",
+        input="Triage this ticket: 'I was charged twice for my May invoice and need a refund ASAP.'",
+        text={
+            "format": {
+                "type": "json_schema",
+                "name": "support_ticket",
+                "schema": ticket_schema,
+                "strict": True,
+            }
+        },
+    )
+
+    ticket = json.loads(response.output_text)
+    print(ticket["category"], ticket["priority"])
+    ```
+  </Tab>
+
+  <Tab title="Chat completions">
+    On [Chat Completions](/api-reference/chat-completions-api/create-a-chat-completion), set `response_format` to a `json_schema` object. The schema is nested one level deeper, under `json_schema.schema`. This API also accepts `{ "type": "json_object" }` for free-form JSON without a schema.
+
+    ```python theme={null}
+    import json
+    from openai import OpenAI
+
+    client = OpenAI(
+        api_key="YOUR_VALAR_API_KEY",
+        base_url="https://api.valarhq.ai/v1",
+    )
+
+    ticket_schema = {
+        "type": "object",
+        "properties": {
+            "category": {
+                "type": "string",
+                "enum": ["billing", "bug", "feature_request", "account", "other"],
+            },
+            "priority": {"type": "string", "enum": ["low", "medium", "high", "urgent"]},
+            "summary": {"type": "string"},
+        },
+        "required": ["category", "priority", "summary"],
+        "additionalProperties": False,
+    }
+
+    completion = client.chat.completions.create(
+        model="moonshotai/Kimi-K2.6",
+        messages=[
+            {
+                "role": "user",
+                "content": "Triage this ticket: 'I was charged twice for my May invoice and need a refund ASAP.'",
+            }
+        ],
+        response_format={
+            "type": "json_schema",
+            "json_schema": {
+                "name": "support_ticket",
+                "schema": ticket_schema,
+                "strict": True,
+            },
+        },
+    )
+
+    ticket = json.loads(completion.choices[0].message.content)
+    print(ticket["category"], ticket["priority"])
+    ```
+  </Tab>
+
+  <Tab title="Messages">
+    The Anthropic-compatible [Messages API](/api-reference/messages-api/create-an-anthropic-message) uses `output_config.format` with a `json_schema` object. The example below uses `requests` to show the raw shape.
+
+    ```python theme={null}
+    import json
+    import os
+    import requests
+
+    ticket_schema = {
+        "type": "object",
+        "properties": {
+            "category": {
+                "type": "string",
+                "enum": ["billing", "bug", "feature_request", "account", "other"],
+            },
+            "priority": {"type": "string", "enum": ["low", "medium", "high", "urgent"]},
+            "summary": {"type": "string"},
+        },
+        "required": ["category", "priority", "summary"],
+        "additionalProperties": False,
+    }
+
+    resp = requests.post(
+        "https://api.valarhq.ai/v1/messages",
+        headers={
+            "Authorization": f"Bearer {os.environ['VALAR_API_KEY']}",
+            "Content-Type": "application/json",
+        },
+        json={
+            "model": "moonshotai/Kimi-K2.6",
+            "max_tokens": 1024,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "Triage this ticket: 'I was charged twice for my May invoice and need a refund ASAP.'",
+                }
+            ],
+            "output_config": {
+                "format": {
+                    "type": "json_schema",
+                    "name": "support_ticket",
+                    "schema": ticket_schema,
+                    "strict": True,
+                }
+            },
+        },
+        timeout=60,
+    )
+    resp.raise_for_status()
+
+    ticket = json.loads(resp.json()["content"][0]["text"])
+    print(ticket["category"], ticket["priority"])
+    ```
+  </Tab>
+</Tabs>
+
+## Enforcing the schema with strict
+
+Setting `strict: true` makes Valar enforce the schema during decoding, so the response is guaranteed to match the structure you declared — required fields are present, types line up, and `enum` values stay within the allowed set. Without it, the schema is treated as guidance and the model may drift.
+
+For strict mode to hold, your schema must be one Valar can enforce. A schema that is malformed or uses an unsupported construct returns `400 invalid_request_error` rather than running the request, so validate the shape before you ship it.
+
+<Tip>
+  You rarely need to hand-write the schema. Generate it from a [Pydantic](https://docs.pydantic.dev/) model with `Model.model_json_schema()`, or from a [Zod](https://zod.dev/) schema with a JSON Schema converter, then drop the result into the `schema` field.
+
+  ```python theme={null}
+  from pydantic import BaseModel
+  from typing import Literal
+
+  class SupportTicket(BaseModel):
+      category: Literal["billing", "bug", "feature_request", "account", "other"]
+      priority: Literal["low", "medium", "high", "urgent"]
+      summary: str
+
+  ticket_schema = SupportTicket.model_json_schema()
+  ```
+</Tip>
+
+## See also
+
+- [API support matrix](/support) — confirm which structured-output formats each model and API support.
+- [Create a response](/api-reference/responses-api/create-a-response) — full `text.format` reference.
+- [Create a chat completion](/api-reference/chat-completions-api/create-a-chat-completion) — full `response_format` reference.
+- [Create an Anthropic message](/api-reference/messages-api/create-an-anthropic-message) — full `output_config` reference.

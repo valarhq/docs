@@ -1,0 +1,85 @@
+---
+title: "OpenAI Agents SDK"
+description: "Run the OpenAI Agents SDK for Python against Valar instead of OpenAI"
+---
+
+The [OpenAI Agents SDK](https://openai.github.io/openai-agents-python/) builds agentic loops — model calls, tool calls, handoffs — on top of an OpenAI client. Because that client speaks the OpenAI Chat Completions protocol, you can point it at any OpenAI-compatible endpoint. Set the base URL to Valar and the SDK runs your agents on Valar models with no other changes.
+
+## Run an agent on Valar
+
+<Steps>
+  <Step title="Install the SDK">
+    ```bash theme={null}
+    pip install openai-agents
+    ```
+  </Step>
+  <Step title="Set your API key">
+    Export your Valar key so the client can read it from the environment.
+
+    ```bash theme={null}
+    export VALAR_API_KEY="your-api-key"
+    ```
+  </Step>
+  <Step title="Point the client at Valar">
+    Create an `AsyncOpenAI` client with Valar's base URL, then wrap it in an `OpenAIChatCompletionsModel` and hand that to your agent. The model id is a Valar model — see [Models](/models) for the full list.
+
+    ```python theme={null}
+    from agents import Agent, Runner, OpenAIChatCompletionsModel
+    from openai import AsyncOpenAI
+    import os
+
+    client = AsyncOpenAI(base_url="https://api.valarhq.ai/v1", api_key=os.environ["VALAR_API_KEY"])
+    agent = Agent(
+        name="Assistant",
+        instructions="You are a concise assistant.",
+        model=OpenAIChatCompletionsModel(model="moonshotai/Kimi-K2.6", openai_client=client),
+    )
+    result = Runner.run_sync(agent, "Summarize the benefits of async inference in two sentences.")
+    print(result.final_output)
+    ```
+  </Step>
+  <Step title="Add a tool">
+    Decorate a Python function with `@function_tool` and attach it to the agent through `tools`. The SDK exposes the function's signature and docstring to the model, runs the call when the model asks for it, and feeds the result back into the loop.
+
+    ```python theme={null}
+    from agents import Agent, Runner, OpenAIChatCompletionsModel, function_tool
+    from openai import AsyncOpenAI
+    import os
+
+    client = AsyncOpenAI(base_url="https://api.valarhq.ai/v1", api_key=os.environ["VALAR_API_KEY"])
+
+    @function_tool
+    def get_weather(city: str) -> str:
+        """Return the current weather for a city."""
+        return f"The weather in {city} is sunny."
+
+    agent = Agent(
+        name="Assistant",
+        instructions="Use the tools you have to answer the question.",
+        model=OpenAIChatCompletionsModel(model="moonshotai/Kimi-K2.6", openai_client=client),
+        tools=[get_weather],
+    )
+    result = Runner.run_sync(agent, "What is the weather in Amsterdam?")
+    print(result.final_output)
+    ```
+  </Step>
+</Steps>
+
+<Note>
+  The SDK's hosted tracing sends trajectories to OpenAI and expects an OpenAI key. When you run purely on Valar, disable it with `set_tracing_disabled(True)` (imported from `agents`). For first-party observability, use Valar's own [Traces](/traces-sdk).
+
+  ```python theme={null}
+  from agents import set_tracing_disabled
+
+  set_tracing_disabled(True)
+  ```
+</Note>
+
+<Note>
+  Valar offers two completion windows: **Now** (`asap`) for interactive work and **Standard** (`standard`) for cheaper, latency-tolerant work. See [Completion windows](/completion-windows) and [Inference modes](/inference-modes) for how to choose between them.
+</Note>
+
+## Related
+
+- [Building a tool-calling agent](/agents) — the underlying request and response cycle.
+- [Models](/models) — the model ids you can pass to `OpenAIChatCompletionsModel`.

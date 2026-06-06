@@ -35,8 +35,8 @@ curl -s -H "Authorization: Bearer $VALAR_API_KEY" \
   },
   "avg_cost_per_day": 776,
   "sla_mix": {
-    "priority": 0.7,
-    "standard": 0.3
+    "asap": 0.3,
+    "standard": 0.7
   },
   "prior_period": {
     "period_spend": 4000,
@@ -60,9 +60,7 @@ curl -s -H "Authorization: Bearer $VALAR_API_KEY" \
 
 <Note>
   The keys in `sla_mix` are [completion window](/completion-windows) names:
-  `asap`, `priority`, `standard`, `flex`. You may also see legacy keys on older
-  entries predating the canonical rate-card rollout — `15min` (now `priority`)
-  and `24hr` (now `flex`).
+  `asap` (the **Now** tier) and `standard`.
 </Note>
 
 ***
@@ -99,7 +97,7 @@ curl -s -H "Authorization: Bearer $VALAR_API_KEY" \
           "cached_tokens": 5000
         }
       },
-      "slas": { "priority": 800 }
+      "slas": { "standard": 800 }
     }
   ],
   "models": [
@@ -110,7 +108,7 @@ curl -s -H "Authorization: Bearer $VALAR_API_KEY" \
       "input_tokens": 210000,
       "output_tokens": 105000,
       "cached_tokens": 35000,
-      "slas": { "priority": 3500 },
+      "slas": { "standard": 3500 },
       "percentage": 0.65
     }
   ]
@@ -163,7 +161,7 @@ curl -s -H "Authorization: Bearer $VALAR_API_KEY" \
     {
       "response_id": "resp_abc123",
       "model": "zai-org/GLM-5.1-FP8",
-      "sla": "priority",
+      "sla": "standard",
       "status": "completed",
       "created_at": "2025-01-15T10:00:00Z",
       "updated_at": "2025-01-15T10:01:00Z"

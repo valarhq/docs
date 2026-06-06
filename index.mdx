@@ -17,6 +17,16 @@ Because agent work is rarely interactive, the API leans on a `background` mode. 
   Authenticate with `Authorization: Bearer <key>`. Generate keys from the dashboard at [app.valarhq.ai](https://app.valarhq.ai), and store them in the `VALAR_API_KEY` environment variable so the SDK and OpenAI clients pick them up automatically.
 </Note>
 
+## Choose your execution mode
+
+How soon you need each result decides how you call Valar. [Inference modes](/inference-modes) covers this in depth; in short:
+
+| Mode | How you call it | Latency | Cost | Best for |
+| --- | --- | --- | --- | --- |
+| Realtime | Synchronous request on the **Now** window | Seconds | Highest | Interactive chat, prototyping |
+| Async | `background=True`, then poll or wait on a [webhook](/webhooks), on the **Standard** window | Minutes | Lower | Agent loops, background jobs |
+| Batch | The [Batches API](/requests_at_scale) on the **Standard** window | Up to hours | Lowest | Large datasets, evals, offline jobs |
+
 ## Where to go next
 
 <Columns cols={1}>

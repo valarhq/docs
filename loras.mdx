@@ -169,7 +169,7 @@ Set the LoRA's name or its UUID as `metadata.lora` on any Responses, Chat Comple
         input=[{"role": "user", "content": "Write a one-liner about a centrifuge having a bad day."}],
         metadata={
             "lora": "punchier-v1",
-            "completion_window": "priority",
+            "completion_window": "standard",
         },
         background=True,
     )
@@ -181,14 +181,14 @@ Set the LoRA's name or its UUID as `metadata.lora` on any Responses, Chat Comple
     response = client.chat.completions.create(
         model="moonshotai/Kimi-K2.6",
         messages=[{"role": "user", "content": "Tell me a joke about Go channels."}],
-        extra_body={"metadata": {"lora": "punchier-v1", "completion_window": "priority"}},
+        extra_body={"metadata": {"lora": "punchier-v1", "completion_window": "standard"}},
     )
     ```
   </Tab>
 </Tabs>
 
 <Warning>
-  `completion_window` cannot be `asap` on a LoRA request. Choose `priority`, `standard`, or `flex` — see [Completion Windows](/completion-windows).
+  A LoRA request can't use the **Now** (`asap`) window. Use `standard` — see [Completion windows](/completion-windows).
 </Warning>
 
 Keep these rules in mind when routing through a LoRA:
