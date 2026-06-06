@@ -1,18 +1,18 @@
 ---
 title: "Pricing"
-description: "How ValarAI bills inference and the per-token rate for every model"
+description: "How Valar bills inference and the per-token rate for every model"
 ---
 
 ## How billing works
 
 You pay per token. Three rates apply to each request: **input** for the tokens you send, **cached** for input tokens served from a prefix cache, and **output** for the tokens the model generates. Every figure in the table below is in **USD per 1M tokens**.
 
-Caching is automatic — ValarAI matches shared prompt prefixes for you and charges the lower cached rate on the tokens that hit. You can raise your hit rate by passing [`prompt_cache_key`](/api-reference/responses-api/create-a-response#body-prompt-cache-key) as a routing hint, but it's optional.
+Caching is automatic - Valar matches shared prompt prefixes for you and charges the lower cached rate on the tokens that hit. You can raise your hit rate by passing `prompt_cache_key` as a routing hint, but it's optional.
 
-The rate you pay also depends on the completion window you request. ValarAI runs four windows — `asap`, `priority`, `standard`, and `flex` — and faster scheduling carries a higher rate. The table lists every model with its windows priced out; not every model offers every window. [Completion Windows](/completion-windows) explains the trade-offs, and you can mix windows per request.
+The rate you pay also depends on the completion window you request. ValarAI runs four windows - `now`, `standard`-  and faster scheduling carries a higher rate. The table lists every model with its windows priced out; not every model offers every window. [Completion Windows](/completion-windows) explains the trade-offs, and you can mix windows per request.
 
 <Note>
-  Window coverage differs by model, and we keep adding models and widening window support. If a model or window you want isn't shown, <a href="mailto:support@valarhq.ai">get in touch</a>.
+  Window coverage differs by model, and we keep adding models and widening window support. If a model or window you want isn't shown, .
 </Note>
 
 ## Rate table
@@ -79,42 +79,42 @@ The rate you pay also depends on the completion window you request. ValarAI runs
                     className="cap-copy-btn"
                     aria-label="Copy moonshotai/Kimi-K2.6"
                     onClick={(e) => {
-                  const b = e.currentTarget;
-                  const t = "moonshotai/Kimi-K2.6";
-                  const ok = () => {
-                    b.classList.add("cap-copy-done");
-                    setTimeout(
-                      () => b.classList.remove("cap-copy-done"),
-                      1500,
-                    );
-                  };
-                  if (
-                    navigator.clipboard &&
-                    navigator.clipboard.writeText
-                  ) {
-                    navigator.clipboard
-                      .writeText(t)
-                      .then(ok)
-                      .catch(() => fallback(b, t, ok));
-                  } else {
-                    fallback(b, t, ok);
+                const b = e.currentTarget;
+                const t = "moonshotai/Kimi-K2.6";
+                const ok = () => {
+                  b.classList.add("cap-copy-done");
+                  setTimeout(
+                    () => b.classList.remove("cap-copy-done"),
+                    1500,
+                  );
+                };
+                if (
+                  navigator.clipboard &&
+                  navigator.clipboard.writeText
+                ) {
+                  navigator.clipboard
+                    .writeText(t)
+                    .then(ok)
+                    .catch(() => fallback(b, t, ok));
+                } else {
+                  fallback(b, t, ok);
+                }
+                function fallback(_b, _t, _ok) {
+                  const ta = document.createElement("textarea");
+                  ta.value = _t;
+                  ta.style.position = "absolute";
+                  ta.style.left = "-9999px";
+                  document.body.appendChild(ta);
+                  ta.select();
+                  try {
+                    document.execCommand("copy");
+                    _ok();
+                  } catch (_) {
+                    _ok();
                   }
-                  function fallback(_b, _t, _ok) {
-                    const ta = document.createElement("textarea");
-                    ta.value = _t;
-                    ta.style.position = "absolute";
-                    ta.style.left = "-9999px";
-                    document.body.appendChild(ta);
-                    ta.select();
-                    try {
-                      document.execCommand("copy");
-                      _ok();
-                    } catch (_) {
-                      _ok();
-                    }
-                    document.body.removeChild(ta);
-                  }
-                }}
+                  document.body.removeChild(ta);
+                }
+              }}
                   >
                     <span className="cap-copy-icon-wrap">
                       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="cap-copy-icon cap-copy-icon-default" aria-hidden="true">
@@ -140,7 +140,7 @@ The rate you pay also depends on the completion window you request. ValarAI runs
           <td className="pricing-cell pricing-cell-price" data-axis="Input" data-window="priority">
             <span className="price-amount">
               <span className="price-currency" aria-hidden="true">
-                \$
+                $
               </span>
 
               0.45
@@ -150,7 +150,7 @@ The rate you pay also depends on the completion window you request. ValarAI runs
           <td className="pricing-cell pricing-cell-price" data-axis="Cached" data-window="priority">
             <span className="price-amount">
               <span className="price-currency" aria-hidden="true">
-                \$
+                $
               </span>
 
               0.20
@@ -160,7 +160,7 @@ The rate you pay also depends on the completion window you request. ValarAI runs
           <td className="pricing-cell pricing-cell-price" data-axis="Output" data-window="priority">
             <span className="price-amount">
               <span className="price-currency" aria-hidden="true">
-                \$
+                $
               </span>
 
               3.00
@@ -176,7 +176,7 @@ The rate you pay also depends on the completion window you request. ValarAI runs
           <td className="pricing-cell pricing-cell-price" data-axis="Input" data-window="asap">
             <span className="price-amount">
               <span className="price-currency" aria-hidden="true">
-                \$
+                $
               </span>
 
               1.00
@@ -186,7 +186,7 @@ The rate you pay also depends on the completion window you request. ValarAI runs
           <td className="pricing-cell pricing-cell-price" data-axis="Cached" data-window="asap">
             <span className="price-amount">
               <span className="price-currency" aria-hidden="true">
-                \$
+                $
               </span>
 
               0.20
@@ -196,7 +196,7 @@ The rate you pay also depends on the completion window you request. ValarAI runs
           <td className="pricing-cell pricing-cell-price" data-axis="Output" data-window="asap">
             <span className="price-amount">
               <span className="price-currency" aria-hidden="true">
-                \$
+                $
               </span>
 
               4.00
@@ -224,42 +224,42 @@ The rate you pay also depends on the completion window you request. ValarAI runs
                     className="cap-copy-btn"
                     aria-label="Copy zai-org/GLM-5.1-FP8"
                     onClick={(e) => {
-                  const b = e.currentTarget;
-                  const t = "zai-org/GLM-5.1-FP8";
-                  const ok = () => {
-                    b.classList.add("cap-copy-done");
-                    setTimeout(
-                      () => b.classList.remove("cap-copy-done"),
-                      1500,
-                    );
-                  };
-                  if (
-                    navigator.clipboard &&
-                    navigator.clipboard.writeText
-                  ) {
-                    navigator.clipboard
-                      .writeText(t)
-                      .then(ok)
-                      .catch(() => fallback(b, t, ok));
-                  } else {
-                    fallback(b, t, ok);
+                const b = e.currentTarget;
+                const t = "zai-org/GLM-5.1-FP8";
+                const ok = () => {
+                  b.classList.add("cap-copy-done");
+                  setTimeout(
+                    () => b.classList.remove("cap-copy-done"),
+                    1500,
+                  );
+                };
+                if (
+                  navigator.clipboard &&
+                  navigator.clipboard.writeText
+                ) {
+                  navigator.clipboard
+                    .writeText(t)
+                    .then(ok)
+                    .catch(() => fallback(b, t, ok));
+                } else {
+                  fallback(b, t, ok);
+                }
+                function fallback(_b, _t, _ok) {
+                  const ta = document.createElement("textarea");
+                  ta.value = _t;
+                  ta.style.position = "absolute";
+                  ta.style.left = "-9999px";
+                  document.body.appendChild(ta);
+                  ta.select();
+                  try {
+                    document.execCommand("copy");
+                    _ok();
+                  } catch (_) {
+                    _ok();
                   }
-                  function fallback(_b, _t, _ok) {
-                    const ta = document.createElement("textarea");
-                    ta.value = _t;
-                    ta.style.position = "absolute";
-                    ta.style.left = "-9999px";
-                    document.body.appendChild(ta);
-                    ta.select();
-                    try {
-                      document.execCommand("copy");
-                      _ok();
-                    } catch (_) {
-                      _ok();
-                    }
-                    document.body.removeChild(ta);
-                  }
-                }}
+                  document.body.removeChild(ta);
+                }
+              }}
                   >
                     <span className="cap-copy-icon-wrap">
                       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="cap-copy-icon cap-copy-icon-default" aria-hidden="true">
@@ -285,7 +285,7 @@ The rate you pay also depends on the completion window you request. ValarAI runs
           <td className="pricing-cell pricing-cell-price" data-axis="Input" data-window="standard">
             <span className="price-amount">
               <span className="price-currency" aria-hidden="true">
-                \$
+                $
               </span>
 
               0.50
@@ -295,7 +295,7 @@ The rate you pay also depends on the completion window you request. ValarAI runs
           <td className="pricing-cell pricing-cell-price" data-axis="Cached" data-window="standard">
             <span className="price-amount">
               <span className="price-currency" aria-hidden="true">
-                \$
+                $
               </span>
 
               0.12
@@ -305,7 +305,7 @@ The rate you pay also depends on the completion window you request. ValarAI runs
           <td className="pricing-cell pricing-cell-price" data-axis="Output" data-window="standard">
             <span className="price-amount">
               <span className="price-currency" aria-hidden="true">
-                \$
+                $
               </span>
 
               2.50
@@ -321,7 +321,7 @@ The rate you pay also depends on the completion window you request. ValarAI runs
           <td className="pricing-cell pricing-cell-price" data-axis="Input" data-window="priority">
             <span className="price-amount">
               <span className="price-currency" aria-hidden="true">
-                \$
+                $
               </span>
 
               0.70
@@ -331,7 +331,7 @@ The rate you pay also depends on the completion window you request. ValarAI runs
           <td className="pricing-cell pricing-cell-price" data-axis="Cached" data-window="priority">
             <span className="price-amount">
               <span className="price-currency" aria-hidden="true">
-                \$
+                $
               </span>
 
               0.18
@@ -341,7 +341,7 @@ The rate you pay also depends on the completion window you request. ValarAI runs
           <td className="pricing-cell pricing-cell-price" data-axis="Output" data-window="priority">
             <span className="price-amount">
               <span className="price-currency" aria-hidden="true">
-                \$
+                $
               </span>
 
               3.00
@@ -357,7 +357,7 @@ The rate you pay also depends on the completion window you request. ValarAI runs
           <td className="pricing-cell pricing-cell-price" data-axis="Input" data-window="flex">
             <span className="price-amount">
               <span className="price-currency" aria-hidden="true">
-                \$
+                $
               </span>
 
               0.40
@@ -367,7 +367,7 @@ The rate you pay also depends on the completion window you request. ValarAI runs
           <td className="pricing-cell pricing-cell-price" data-axis="Cached" data-window="flex">
             <span className="price-amount">
               <span className="price-currency" aria-hidden="true">
-                \$
+                $
               </span>
 
               0.08
@@ -377,7 +377,7 @@ The rate you pay also depends on the completion window you request. ValarAI runs
           <td className="pricing-cell pricing-cell-price" data-axis="Output" data-window="flex">
             <span className="price-amount">
               <span className="price-currency" aria-hidden="true">
-                \$
+                $
               </span>
 
               1.80
@@ -393,7 +393,7 @@ The rate you pay also depends on the completion window you request. ValarAI runs
           <td className="pricing-cell pricing-cell-price" data-axis="Input" data-window="asap">
             <span className="price-amount">
               <span className="price-currency" aria-hidden="true">
-                \$
+                $
               </span>
 
               1.40
@@ -403,7 +403,7 @@ The rate you pay also depends on the completion window you request. ValarAI runs
           <td className="pricing-cell pricing-cell-price" data-axis="Cached" data-window="asap">
             <span className="price-amount">
               <span className="price-currency" aria-hidden="true">
-                \$
+                $
               </span>
 
               0.26
@@ -413,7 +413,7 @@ The rate you pay also depends on the completion window you request. ValarAI runs
           <td className="pricing-cell pricing-cell-price" data-axis="Output" data-window="asap">
             <span className="price-amount">
               <span className="price-currency" aria-hidden="true">
-                \$
+                $
               </span>
 
               4.40
@@ -441,42 +441,42 @@ The rate you pay also depends on the completion window you request. ValarAI runs
                     className="cap-copy-btn"
                     aria-label="Copy openai/gpt-oss-120b"
                     onClick={(e) => {
-                  const b = e.currentTarget;
-                  const t = "openai/gpt-oss-120b";
-                  const ok = () => {
-                    b.classList.add("cap-copy-done");
-                    setTimeout(
-                      () => b.classList.remove("cap-copy-done"),
-                      1500,
-                    );
-                  };
-                  if (
-                    navigator.clipboard &&
-                    navigator.clipboard.writeText
-                  ) {
-                    navigator.clipboard
-                      .writeText(t)
-                      .then(ok)
-                      .catch(() => fallback(b, t, ok));
-                  } else {
-                    fallback(b, t, ok);
+                const b = e.currentTarget;
+                const t = "openai/gpt-oss-120b";
+                const ok = () => {
+                  b.classList.add("cap-copy-done");
+                  setTimeout(
+                    () => b.classList.remove("cap-copy-done"),
+                    1500,
+                  );
+                };
+                if (
+                  navigator.clipboard &&
+                  navigator.clipboard.writeText
+                ) {
+                  navigator.clipboard
+                    .writeText(t)
+                    .then(ok)
+                    .catch(() => fallback(b, t, ok));
+                } else {
+                  fallback(b, t, ok);
+                }
+                function fallback(_b, _t, _ok) {
+                  const ta = document.createElement("textarea");
+                  ta.value = _t;
+                  ta.style.position = "absolute";
+                  ta.style.left = "-9999px";
+                  document.body.appendChild(ta);
+                  ta.select();
+                  try {
+                    document.execCommand("copy");
+                    _ok();
+                  } catch (_) {
+                    _ok();
                   }
-                  function fallback(_b, _t, _ok) {
-                    const ta = document.createElement("textarea");
-                    ta.value = _t;
-                    ta.style.position = "absolute";
-                    ta.style.left = "-9999px";
-                    document.body.appendChild(ta);
-                    ta.select();
-                    try {
-                      document.execCommand("copy");
-                      _ok();
-                    } catch (_) {
-                      _ok();
-                    }
-                    document.body.removeChild(ta);
-                  }
-                }}
+                  document.body.removeChild(ta);
+                }
+              }}
                   >
                     <span className="cap-copy-icon-wrap">
                       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="cap-copy-icon cap-copy-icon-default" aria-hidden="true">
@@ -502,7 +502,7 @@ The rate you pay also depends on the completion window you request. ValarAI runs
           <td className="pricing-cell pricing-cell-price" data-axis="Input" data-window="priority">
             <span className="price-amount">
               <span className="price-currency" aria-hidden="true">
-                \$
+                $
               </span>
 
               0.04
@@ -512,7 +512,7 @@ The rate you pay also depends on the completion window you request. ValarAI runs
           <td className="pricing-cell pricing-cell-price" data-axis="Cached" data-window="priority">
             <span className="price-amount">
               <span className="price-currency" aria-hidden="true">
-                \$
+                $
               </span>
 
               0.02
@@ -522,7 +522,7 @@ The rate you pay also depends on the completion window you request. ValarAI runs
           <td className="pricing-cell pricing-cell-price" data-axis="Output" data-window="priority">
             <span className="price-amount">
               <span className="price-currency" aria-hidden="true">
-                \$
+                $
               </span>
 
               0.30
@@ -538,7 +538,7 @@ The rate you pay also depends on the completion window you request. ValarAI runs
           <td className="pricing-cell pricing-cell-price" data-axis="Input" data-window="asap">
             <span className="price-amount">
               <span className="price-currency" aria-hidden="true">
-                \$
+                $
               </span>
 
               0.06
@@ -548,7 +548,7 @@ The rate you pay also depends on the completion window you request. ValarAI runs
           <td className="pricing-cell pricing-cell-price" data-axis="Cached" data-window="asap">
             <span className="price-amount">
               <span className="price-currency" aria-hidden="true">
-                \$
+                $
               </span>
 
               0.03
@@ -558,7 +558,7 @@ The rate you pay also depends on the completion window you request. ValarAI runs
           <td className="pricing-cell pricing-cell-price" data-axis="Output" data-window="asap">
             <span className="price-amount">
               <span className="price-currency" aria-hidden="true">
-                \$
+                $
               </span>
 
               0.40
@@ -586,42 +586,42 @@ The rate you pay also depends on the completion window you request. ValarAI runs
                     className="cap-copy-btn"
                     aria-label="Copy google/gemma-4-31B-it"
                     onClick={(e) => {
-                  const b = e.currentTarget;
-                  const t = "google/gemma-4-31B-it";
-                  const ok = () => {
-                    b.classList.add("cap-copy-done");
-                    setTimeout(
-                      () => b.classList.remove("cap-copy-done"),
-                      1500,
-                    );
-                  };
-                  if (
-                    navigator.clipboard &&
-                    navigator.clipboard.writeText
-                  ) {
-                    navigator.clipboard
-                      .writeText(t)
-                      .then(ok)
-                      .catch(() => fallback(b, t, ok));
-                  } else {
-                    fallback(b, t, ok);
+                const b = e.currentTarget;
+                const t = "google/gemma-4-31B-it";
+                const ok = () => {
+                  b.classList.add("cap-copy-done");
+                  setTimeout(
+                    () => b.classList.remove("cap-copy-done"),
+                    1500,
+                  );
+                };
+                if (
+                  navigator.clipboard &&
+                  navigator.clipboard.writeText
+                ) {
+                  navigator.clipboard
+                    .writeText(t)
+                    .then(ok)
+                    .catch(() => fallback(b, t, ok));
+                } else {
+                  fallback(b, t, ok);
+                }
+                function fallback(_b, _t, _ok) {
+                  const ta = document.createElement("textarea");
+                  ta.value = _t;
+                  ta.style.position = "absolute";
+                  ta.style.left = "-9999px";
+                  document.body.appendChild(ta);
+                  ta.select();
+                  try {
+                    document.execCommand("copy");
+                    _ok();
+                  } catch (_) {
+                    _ok();
                   }
-                  function fallback(_b, _t, _ok) {
-                    const ta = document.createElement("textarea");
-                    ta.value = _t;
-                    ta.style.position = "absolute";
-                    ta.style.left = "-9999px";
-                    document.body.appendChild(ta);
-                    ta.select();
-                    try {
-                      document.execCommand("copy");
-                      _ok();
-                    } catch (_) {
-                      _ok();
-                    }
-                    document.body.removeChild(ta);
-                  }
-                }}
+                  document.body.removeChild(ta);
+                }
+              }}
                   >
                     <span className="cap-copy-icon-wrap">
                       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="cap-copy-icon cap-copy-icon-default" aria-hidden="true">
@@ -647,7 +647,7 @@ The rate you pay also depends on the completion window you request. ValarAI runs
           <td className="pricing-cell pricing-cell-price" data-axis="Input" data-window="standard">
             <span className="price-amount">
               <span className="price-currency" aria-hidden="true">
-                \$
+                $
               </span>
 
               0.12
@@ -657,7 +657,7 @@ The rate you pay also depends on the completion window you request. ValarAI runs
           <td className="pricing-cell pricing-cell-price" data-axis="Cached" data-window="standard">
             <span className="price-amount">
               <span className="price-currency" aria-hidden="true">
-                \$
+                $
               </span>
 
               0.08
@@ -667,7 +667,7 @@ The rate you pay also depends on the completion window you request. ValarAI runs
           <td className="pricing-cell pricing-cell-price" data-axis="Output" data-window="standard">
             <span className="price-amount">
               <span className="price-currency" aria-hidden="true">
-                \$
+                $
               </span>
 
               0.60
@@ -683,7 +683,7 @@ The rate you pay also depends on the completion window you request. ValarAI runs
           <td className="pricing-cell pricing-cell-price" data-axis="Input" data-window="flex">
             <span className="price-amount">
               <span className="price-currency" aria-hidden="true">
-                \$
+                $
               </span>
 
               0.06
@@ -693,7 +693,7 @@ The rate you pay also depends on the completion window you request. ValarAI runs
           <td className="pricing-cell pricing-cell-price" data-axis="Cached" data-window="flex">
             <span className="price-amount">
               <span className="price-currency" aria-hidden="true">
-                \$
+                $
               </span>
 
               0.02
@@ -703,7 +703,7 @@ The rate you pay also depends on the completion window you request. ValarAI runs
           <td className="pricing-cell pricing-cell-price" data-axis="Output" data-window="flex">
             <span className="price-amount">
               <span className="price-currency" aria-hidden="true">
-                \$
+                $
               </span>
 
               0.30
@@ -719,7 +719,7 @@ The rate you pay also depends on the completion window you request. ValarAI runs
           <td className="pricing-cell pricing-cell-price" data-axis="Input" data-window="asap">
             <span className="price-amount">
               <span className="price-currency" aria-hidden="true">
-                \$
+                $
               </span>
 
               0.40
@@ -729,7 +729,7 @@ The rate you pay also depends on the completion window you request. ValarAI runs
           <td className="pricing-cell pricing-cell-price" data-axis="Cached" data-window="asap">
             <span className="price-amount">
               <span className="price-currency" aria-hidden="true">
-                \$
+                $
               </span>
 
               0.20
@@ -739,7 +739,7 @@ The rate you pay also depends on the completion window you request. ValarAI runs
           <td className="pricing-cell pricing-cell-price" data-axis="Output" data-window="asap">
             <span className="price-amount">
               <span className="price-currency" aria-hidden="true">
-                \$
+                $
               </span>
 
               0.60
@@ -767,42 +767,42 @@ The rate you pay also depends on the completion window you request. ValarAI runs
                     className="cap-copy-btn"
                     aria-label="Copy nvidia/Gemma-4-31B-IT-NVFP4"
                     onClick={(e) => {
-                  const b = e.currentTarget;
-                  const t = "nvidia/Gemma-4-31B-IT-NVFP4";
-                  const ok = () => {
-                    b.classList.add("cap-copy-done");
-                    setTimeout(
-                      () => b.classList.remove("cap-copy-done"),
-                      1500,
-                    );
-                  };
-                  if (
-                    navigator.clipboard &&
-                    navigator.clipboard.writeText
-                  ) {
-                    navigator.clipboard
-                      .writeText(t)
-                      .then(ok)
-                      .catch(() => fallback(b, t, ok));
-                  } else {
-                    fallback(b, t, ok);
+                const b = e.currentTarget;
+                const t = "nvidia/Gemma-4-31B-IT-NVFP4";
+                const ok = () => {
+                  b.classList.add("cap-copy-done");
+                  setTimeout(
+                    () => b.classList.remove("cap-copy-done"),
+                    1500,
+                  );
+                };
+                if (
+                  navigator.clipboard &&
+                  navigator.clipboard.writeText
+                ) {
+                  navigator.clipboard
+                    .writeText(t)
+                    .then(ok)
+                    .catch(() => fallback(b, t, ok));
+                } else {
+                  fallback(b, t, ok);
+                }
+                function fallback(_b, _t, _ok) {
+                  const ta = document.createElement("textarea");
+                  ta.value = _t;
+                  ta.style.position = "absolute";
+                  ta.style.left = "-9999px";
+                  document.body.appendChild(ta);
+                  ta.select();
+                  try {
+                    document.execCommand("copy");
+                    _ok();
+                  } catch (_) {
+                    _ok();
                   }
-                  function fallback(_b, _t, _ok) {
-                    const ta = document.createElement("textarea");
-                    ta.value = _t;
-                    ta.style.position = "absolute";
-                    ta.style.left = "-9999px";
-                    document.body.appendChild(ta);
-                    ta.select();
-                    try {
-                      document.execCommand("copy");
-                      _ok();
-                    } catch (_) {
-                      _ok();
-                    }
-                    document.body.removeChild(ta);
-                  }
-                }}
+                  document.body.removeChild(ta);
+                }
+              }}
                   >
                     <span className="cap-copy-icon-wrap">
                       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="cap-copy-icon cap-copy-icon-default" aria-hidden="true">
@@ -828,7 +828,7 @@ The rate you pay also depends on the completion window you request. ValarAI runs
           <td className="pricing-cell pricing-cell-price" data-axis="Input" data-window="standard">
             <span className="price-amount">
               <span className="price-currency" aria-hidden="true">
-                \$
+                $
               </span>
 
               0.07
@@ -838,7 +838,7 @@ The rate you pay also depends on the completion window you request. ValarAI runs
           <td className="pricing-cell pricing-cell-price" data-axis="Cached" data-window="standard">
             <span className="price-amount">
               <span className="price-currency" aria-hidden="true">
-                \$
+                $
               </span>
 
               0.05
@@ -848,7 +848,7 @@ The rate you pay also depends on the completion window you request. ValarAI runs
           <td className="pricing-cell pricing-cell-price" data-axis="Output" data-window="standard">
             <span className="price-amount">
               <span className="price-currency" aria-hidden="true">
-                \$
+                $
               </span>
 
               0.40
@@ -864,7 +864,7 @@ The rate you pay also depends on the completion window you request. ValarAI runs
           <td className="pricing-cell pricing-cell-price" data-axis="Input" data-window="asap">
             <span className="price-amount">
               <span className="price-currency" aria-hidden="true">
-                \$
+                $
               </span>
 
               0.14
@@ -874,7 +874,7 @@ The rate you pay also depends on the completion window you request. ValarAI runs
           <td className="pricing-cell pricing-cell-price" data-axis="Cached" data-window="asap">
             <span className="price-amount">
               <span className="price-currency" aria-hidden="true">
-                \$
+                $
               </span>
 
               0.07
@@ -884,7 +884,7 @@ The rate you pay also depends on the completion window you request. ValarAI runs
           <td className="pricing-cell pricing-cell-price" data-axis="Output" data-window="asap">
             <span className="price-amount">
               <span className="price-currency" aria-hidden="true">
-                \$
+                $
               </span>
 
               0.40
@@ -912,42 +912,42 @@ The rate you pay also depends on the completion window you request. ValarAI runs
                     className="cap-copy-btn"
                     aria-label="Copy deepseek-ai/DeepSeek-V4-Pro"
                     onClick={(e) => {
-                  const b = e.currentTarget;
-                  const t = "deepseek-ai/DeepSeek-V4-Pro";
-                  const ok = () => {
-                    b.classList.add("cap-copy-done");
-                    setTimeout(
-                      () => b.classList.remove("cap-copy-done"),
-                      1500,
-                    );
-                  };
-                  if (
-                    navigator.clipboard &&
-                    navigator.clipboard.writeText
-                  ) {
-                    navigator.clipboard
-                      .writeText(t)
-                      .then(ok)
-                      .catch(() => fallback(b, t, ok));
-                  } else {
-                    fallback(b, t, ok);
+                const b = e.currentTarget;
+                const t = "deepseek-ai/DeepSeek-V4-Pro";
+                const ok = () => {
+                  b.classList.add("cap-copy-done");
+                  setTimeout(
+                    () => b.classList.remove("cap-copy-done"),
+                    1500,
+                  );
+                };
+                if (
+                  navigator.clipboard &&
+                  navigator.clipboard.writeText
+                ) {
+                  navigator.clipboard
+                    .writeText(t)
+                    .then(ok)
+                    .catch(() => fallback(b, t, ok));
+                } else {
+                  fallback(b, t, ok);
+                }
+                function fallback(_b, _t, _ok) {
+                  const ta = document.createElement("textarea");
+                  ta.value = _t;
+                  ta.style.position = "absolute";
+                  ta.style.left = "-9999px";
+                  document.body.appendChild(ta);
+                  ta.select();
+                  try {
+                    document.execCommand("copy");
+                    _ok();
+                  } catch (_) {
+                    _ok();
                   }
-                  function fallback(_b, _t, _ok) {
-                    const ta = document.createElement("textarea");
-                    ta.value = _t;
-                    ta.style.position = "absolute";
-                    ta.style.left = "-9999px";
-                    document.body.appendChild(ta);
-                    ta.select();
-                    try {
-                      document.execCommand("copy");
-                      _ok();
-                    } catch (_) {
-                      _ok();
-                    }
-                    document.body.removeChild(ta);
-                  }
-                }}
+                  document.body.removeChild(ta);
+                }
+              }}
                   >
                     <span className="cap-copy-icon-wrap">
                       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="cap-copy-icon cap-copy-icon-default" aria-hidden="true">
@@ -973,7 +973,7 @@ The rate you pay also depends on the completion window you request. ValarAI runs
           <td className="pricing-cell pricing-cell-price" data-axis="Input" data-window="asap">
             <span className="price-amount">
               <span className="price-currency" aria-hidden="true">
-                \$
+                $
               </span>
 
               1.75
@@ -983,7 +983,7 @@ The rate you pay also depends on the completion window you request. ValarAI runs
           <td className="pricing-cell pricing-cell-price" data-axis="Cached" data-window="asap">
             <span className="price-amount">
               <span className="price-currency" aria-hidden="true">
-                \$
+                $
               </span>
 
               0.15
@@ -993,7 +993,7 @@ The rate you pay also depends on the completion window you request. ValarAI runs
           <td className="pricing-cell pricing-cell-price" data-axis="Output" data-window="asap">
             <span className="price-amount">
               <span className="price-currency" aria-hidden="true">
-                \$
+                $
               </span>
 
               4.50
@@ -1021,42 +1021,42 @@ The rate you pay also depends on the completion window you request. ValarAI runs
                     className="cap-copy-btn"
                     aria-label="Copy MiniMaxAI/MiniMax-M2.7"
                     onClick={(e) => {
-                  const b = e.currentTarget;
-                  const t = "MiniMaxAI/MiniMax-M2.7";
-                  const ok = () => {
-                    b.classList.add("cap-copy-done");
-                    setTimeout(
-                      () => b.classList.remove("cap-copy-done"),
-                      1500,
-                    );
-                  };
-                  if (
-                    navigator.clipboard &&
-                    navigator.clipboard.writeText
-                  ) {
-                    navigator.clipboard
-                      .writeText(t)
-                      .then(ok)
-                      .catch(() => fallback(b, t, ok));
-                  } else {
-                    fallback(b, t, ok);
+                const b = e.currentTarget;
+                const t = "MiniMaxAI/MiniMax-M2.7";
+                const ok = () => {
+                  b.classList.add("cap-copy-done");
+                  setTimeout(
+                    () => b.classList.remove("cap-copy-done"),
+                    1500,
+                  );
+                };
+                if (
+                  navigator.clipboard &&
+                  navigator.clipboard.writeText
+                ) {
+                  navigator.clipboard
+                    .writeText(t)
+                    .then(ok)
+                    .catch(() => fallback(b, t, ok));
+                } else {
+                  fallback(b, t, ok);
+                }
+                function fallback(_b, _t, _ok) {
+                  const ta = document.createElement("textarea");
+                  ta.value = _t;
+                  ta.style.position = "absolute";
+                  ta.style.left = "-9999px";
+                  document.body.appendChild(ta);
+                  ta.select();
+                  try {
+                    document.execCommand("copy");
+                    _ok();
+                  } catch (_) {
+                    _ok();
                   }
-                  function fallback(_b, _t, _ok) {
-                    const ta = document.createElement("textarea");
-                    ta.value = _t;
-                    ta.style.position = "absolute";
-                    ta.style.left = "-9999px";
-                    document.body.appendChild(ta);
-                    ta.select();
-                    try {
-                      document.execCommand("copy");
-                      _ok();
-                    } catch (_) {
-                      _ok();
-                    }
-                    document.body.removeChild(ta);
-                  }
-                }}
+                  document.body.removeChild(ta);
+                }
+              }}
                   >
                     <span className="cap-copy-icon-wrap">
                       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="cap-copy-icon cap-copy-icon-default" aria-hidden="true">
@@ -1082,7 +1082,7 @@ The rate you pay also depends on the completion window you request. ValarAI runs
           <td className="pricing-cell pricing-cell-price" data-axis="Input" data-window="asap">
             <span className="price-amount">
               <span className="price-currency" aria-hidden="true">
-                \$
+                $
               </span>
 
               0.30
@@ -1092,7 +1092,7 @@ The rate you pay also depends on the completion window you request. ValarAI runs
           <td className="pricing-cell pricing-cell-price" data-axis="Cached" data-window="asap">
             <span className="price-amount">
               <span className="price-currency" aria-hidden="true">
-                \$
+                $
               </span>
 
               0.06
@@ -1102,7 +1102,7 @@ The rate you pay also depends on the completion window you request. ValarAI runs
           <td className="pricing-cell pricing-cell-price" data-axis="Output" data-window="asap">
             <span className="price-amount">
               <span className="price-currency" aria-hidden="true">
-                \$
+                $
               </span>
 
               1.20

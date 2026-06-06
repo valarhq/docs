@@ -70,7 +70,8 @@
             "pages": [
               "images",
               "loras"
-            ]
+            ],
+            "hidden": true
           },
           {
             "item": "Run in production",

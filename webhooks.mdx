@@ -23,11 +23,11 @@ Both keys live inside the `metadata` object on the create request. The same keys
   <Step title="Expose a route that accepts POST">
     Your endpoint receives a JSON body and should respond as soon as it has accepted the payload. The body matches exactly what `GET /v1/responses/{response_id}` returns for the same request.
 
-    ```python theme={null}
+    ```python
     from fastapi import FastAPI, Request
-
+    
     app = FastAPI()
-
+    
     @app.post("/hooks/inference-done")
     async def inference_done(request: Request):
         payload = await request.json()
@@ -36,58 +36,46 @@ Both keys live inside the `metadata` object on the create request. The same keys
         return {"ok": True}
     ```
   </Step>
-
   <Step title="Verify the Authorization header">
     If you set `webhook_token`, reject any incoming call whose header doesn't match. Compare against `Authorization: Bearer <your token>` and return a 4xx for anything else.
 
-    ```python theme={null}
+    ```python
     from fastapi import Header, HTTPException
-
+    
     WEBHOOK_TOKEN = "whk_3f0a9c2e7b14"
-
+    
     def assert_authorized(authorization: str = Header(default="")):
         if authorization != f"Bearer {WEBHOOK_TOKEN}":
             raise HTTPException(status_code=401)
     ```
   </Step>
-
   <Step title="Submit a request that points at your endpoint">
     Set `background=True` and add the callback URL (and token, if you use one) to `metadata`.
 
     <CodeGroup>
-      ```python theme={null}
-      from openai import OpenAI
 
-      client = OpenAI(
-          api_key="YOUR_VALAR_API_KEY",
-          base_url="https://api.valarhq.ai/v1",
-      )
-
-      response = client.responses.create(
-          model="zai-org/GLM-5.1-FP8",
-          input="Summarize this document.",
-          background=True,
-          metadata={
-              "completion_webhook": "https://app.example.com/hooks/inference-done",
-              "webhook_token": "whk_3f0a9c2e7b14",
-          },
-      )
-      ```
-
-      ```bash theme={null}
-      curl -X POST https://api.valarhq.ai/v1/responses \
-        -H "Authorization: Bearer YOUR_VALAR_API_KEY" \
-        -H "Content-Type: application/json" \
-        -d '{
-          "model": "zai-org/GLM-5.1-FP8",
-          "input": "Summarize this document.",
-          "background": true,
-          "metadata": {
+    ```python
+    from openai import OpenAI
+    
+    client = OpenAI(
+        api_key="YOUR_VALAR_API_KEY",
+        base_url="https://api.valarhq.ai/v1",
+    )
+    
+    response = client.responses.create(
+        model="zai-org/GLM-5.1-FP8",
+        input="Summarize this document.",
+        background=True,
+        metadata={
             "completion_webhook": "https://app.example.com/hooks/inference-done",
-            "webhook_token": "whk_3f0a9c2e7b14"
-          }
-        }'
-      ```
+            "webhook_token": "whk_3f0a9c2e7b14",
+        },
+    )
+    ```
+
+    ```bash
+    ```
+
     </CodeGroup>
   </Step>
 </Steps>
@@ -128,7 +116,7 @@ You can point a real request at a listener on your own machine.
 
 <Steps>
   <Step title="Run a listener that prints the body and returns 200">
-    ```bash theme={null}
+    ```bash
     python -c "
     from http.server import HTTPServer, BaseHTTPRequestHandler; import json
     class H(BaseHTTPRequestHandler):
@@ -139,17 +127,15 @@ You can point a real request at a listener on your own machine.
     "
     ```
   </Step>
-
   <Step title="Tunnel to it">
-    ```bash theme={null}
+    ```bash
     ngrok http 8765
     ```
 
     Copy the `https://xxxx.ngrok-free.app` forwarding URL from the output.
   </Step>
-
   <Step title="Submit a request against the tunnel">
-    ```bash theme={null}
+    ```bash
     curl -X POST https://api.valarhq.ai/v1/responses \
       -H "Authorization: Bearer YOUR_VALAR_API_KEY" \
       -H "Content-Type: application/json" \
