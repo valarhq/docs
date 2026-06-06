@@ -132,6 +132,10 @@ if __name__ == "__main__":
 
 ## Hand off a bundle with the Batch API
 
+<Note>
+  **Coming soon.** The Batch API isn't generally available yet. Until it ships, fan out through the [Responses API](#fan-out-with-the-responses-api) with `background=True` for large workloads.
+</Note>
+
 The Batch API takes up to 100,000 requests in one call, with a ceiling of 256 MB per batch. The lifecycle is three operations:
 
 <Steps>
