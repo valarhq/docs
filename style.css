@@ -90,6 +90,7 @@
 .cap-logo[data-org="minimax"]  { -webkit-mask-image: url("/images/logos/minimax.svg");  mask-image: url("/images/logos/minimax.svg"); }
 .cap-logo[data-org="openai"]   { -webkit-mask-image: url("/images/logos/openai.svg");   mask-image: url("/images/logos/openai.svg"); }
 .cap-logo[data-org="zhipu"]    { -webkit-mask-image: url("/images/logos/zhipu.svg");    mask-image: url("/images/logos/zhipu.svg"); }
+.cap-logo[data-org="qwen"]     { -webkit-mask-image: url("/images/logos/qwen.svg");     mask-image: url("/images/logos/qwen.svg"); }
 
 /* Slug cell */
 .cap-slug-actions {
