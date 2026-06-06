@@ -33,7 +33,7 @@ print(response.output_text)
 
 ### Async
 
-Set `background=True` on the Responses API. The create call returns a response id immediately, then you poll the [retrieve endpoint](/api-reference/responses-api/retrieve-a-response) or receive a [webhook](/webhooks) when the work finishes. Async runs typically finish in minutes with higher throughput and lower cost.
+Set `background=True` on the Responses API. The create call returns a response id immediately, then you poll the [retrieve endpoint](/api-reference/responses-api/retrieve-a-response) or receive a [webhook](/webhooks) when the work finishes. On the Standard window a turn takes at most a minute and is usually much faster, so async clears high throughput at lower cost.
 
 Async jobs usually run on the **Standard** window (`standard`), the lower-cost default. Use async for agent loops, background jobs, and large fan-out. See [Sending requests at scale](/requests_at_scale).
 
@@ -73,7 +73,7 @@ A completion window tells Valar how much wall-clock time per turn your workload 
 | Window | Avg. turn time | Price | Best for |
 | --- | --- | --- | --- |
 | Now (`asap`) | Immediate | Higher | Realtime calls, interactive UIs, human-in-the-loop |
-| Standard (`standard`) | ~5 min | Lower | Cost-optimized agents, async loops, batch work |
+| Standard (`standard`) | Up to 1 min, usually much faster | Lower | Cost-optimized agents, async loops, batch work |
 
 Realtime uses the **Now** window; async — and batch, once available — typically use **Standard** for lower cost. Each model-and-window price pairing is on the [Pricing](/pricing) page.
 
@@ -96,7 +96,7 @@ Accepted values are `"asap"` (the **Now** tier) and `"standard"`.
 
 **Now** runs immediately on the fastest available hardware in a latency-optimized setup, at the higher on-demand rate. Use it for realtime, interactive requests where a person or another system is waiting on the result.
 
-**Standard** is the default wherever a model supports it. It runs on Valar's maximum-efficiency serving stack and targets roughly a five-minute average turn time across a balanced workload. Most of Valar's published prices reference this window, and it's the right default for async agent loops and batch jobs.
+**Standard** is the default wherever a model supports it. It runs on Valar's maximum-efficiency serving stack with a turn-time ceiling of one minute — and in practice most turns complete much faster than that. Most of Valar's published prices reference this window, and it's the right default for async agent loops and batch jobs.
 
 ### Default behavior
 
