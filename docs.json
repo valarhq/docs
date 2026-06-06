@@ -139,23 +139,6 @@
             "pages": ["usage", "usage-endpoints"]
           }
         ]
-      },
-      {
-        "tab": "SDK",
-        "groups": [
-          {
-            "group": "Overview",
-            "pages": ["sdk-introduction", "sdk-configuration"]
-          },
-          {
-            "group": "Traces",
-            "pages": ["traces-sdk", "traces-sdk-inference", "traces-sdk-errors"]
-          },
-          {
-            "group": "Integrations",
-            "pages": ["sdk-tinker"]
-          }
-        ]
       }
     ]
   },
