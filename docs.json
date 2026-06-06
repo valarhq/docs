@@ -95,7 +95,6 @@
             "group": "Platform",
             "icon": "shield-halved",
             "pages": [
-              "support",
               "dpa"
             ]
           }
