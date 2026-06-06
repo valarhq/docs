@@ -1,0 +1,94 @@
+---
+title: "Configuration"
+description: "Resolve endpoints and retry behavior with valar.Config and valar.RetryPolicy"
+---
+
+You rarely configure the SDK by hand. Set `VALAR_API_KEY`, optionally pick a
+`VALAR_MODE`, and the SDK works out the rest. `valar.Config` is simply the
+resolved result of that process, exposed so you can confirm where requests are
+headed.
+
+## Environment variables
+
+The SDK reads these at startup:
+
+| Variable | Required | Effect |
+| -------- | -------- | ------ |
+| `VALAR_API_KEY` | For inference | Your `sk_...` key. Inference fails without it; `valar.trace` falls back to no-op. |
+| `VALAR_MODE` | No | Named environment to target. Defaults to `prod`. |
+| `VALAR_API_URL` | No | Explicit base URL that overrides whatever `VALAR_MODE` would resolve. |
+
+The broader set of Trace and agent-attribution variables is documented in the
+[Traces environment table](/traces-sdk#environment-variables).
+
+## Resolving a Config
+
+`Config.from_env()` reads the environment and returns the settings the SDK will
+use. Print `api_url` to verify the target:
+
+```python theme={null}
+import valar
+
+config = valar.Config.from_env()
+print(config.api_url)  # https://api.valarhq.ai/v1 (prod default)
+```
+
+Two constructors exist, differing only in how they treat a missing key:
+
+```python theme={null}
+@classmethod
+def from_env() -> Config
+
+@classmethod
+def from_env_optional_api_key() -> Config
+```
+
+* `Config.from_env()` **requires** `VALAR_API_KEY` and raises `ValueError` if it
+  is unset. This is the path inference uses.
+* `Config.from_env_optional_api_key()` treats the key as optional. It supports
+  diagnostic paths — such as the no-op mode of `valar.trace` — that must not
+  crash when no key is present.
+
+### Fields
+
+<ParamField path="api_key" type="str">
+  Your Valar API key, in the `sk_...` format.
+</ParamField>
+
+<ParamField path="api_url" type="str">
+  Base URL the SDK contacts for both inference and traces.
+</ParamField>
+
+## How the endpoint is chosen
+
+`VALAR_MODE` selects a named environment. With nothing set, the `prod` defaults
+apply. An unrecognized value raises `ValueError`.
+
+| `VALAR_MODE` | Resolved `api_url` |
+| ------------ | ------------------ |
+| `prod` (default) | `https://api.valarhq.ai/v1` |
+| `dev` | `https://dev.valarhq.ai` |
+| `staging` | `https://staging.valarhq.ai` |
+| `local` | `http://localhost:8080` |
+
+Setting `VALAR_API_URL` skips this table entirely — its value takes precedence
+over whatever the mode would have produced.
+
+## Retry behavior
+
+The SDK retries transient failures on your behalf, so you don't wire anything up
+per call. The default policy makes up to 3 attempts, backs off exponentially
+with full jitter, and honors a server `Retry-After` header when present.
+
+Which responses retry:
+
+| Status | Retried? |
+| ------ | -------- |
+| 502 / 503 / 504 | Always |
+| 429 | Only with a valid `Retry-After` |
+| 500 and all others | Never — raised immediately |
+
+This is what `valar.RetryPolicy` describes. Two instances are exported for
+inspection: `valar.DEFAULT_RETRY_POLICY` (the policy above) and `valar.NO_RETRY`
+(one attempt, no retries). The SDK applies retries internally, so these are for
+reading, not configuring.

@@ -3,7 +3,7 @@ title: "Sending Requests at Scale"
 description: "Move tens of thousands of requests through Valar without serializing them one by one"
 ---
 
-A loop that fires requests in sequence stalls the moment your workload grows past a few hundred calls. ValarAI gives you two ways to clear large volumes: fan out many concurrent Responses API calls in background mode, or hand a single bundle to the Batch API and let ValarAI work through it. This page covers both, starting with how to choose.
+A loop that fires requests in sequence stalls the moment your workload grows past a few hundred calls. Valar gives you two ways to clear large volumes: fan out many concurrent Responses API calls in background mode, or hand a single bundle to the Batch API and let Valar work through it. This page covers both, starting with how to choose.
 
 ## Which path fits your workload
 
@@ -13,7 +13,7 @@ A loop that fires requests in sequence stalls the moment your workload grows pas
   </Card>
 
   <Card title="Batch API">
-    You have a fixed set of requests and would rather submit once and collect results later. ValarAI owns the queue; you poll for status.
+    You have a fixed set of requests and would rather submit once and collect results later. Valar owns the queue; you poll for status.
   </Card>
 </CardGroup>
 
@@ -132,6 +132,10 @@ if __name__ == "__main__":
 
 ## Hand off a bundle with the Batch API
 
+<Note>
+  **Coming soon.** The Batch API isn't generally available yet. Until it ships, fan out through the [Responses API](#fan-out-with-the-responses-api) with `background=True` for large workloads.
+</Note>
+
 The Batch API takes up to 100,000 requests in one call, with a ceiling of 256 MB per batch. The lifecycle is three operations:
 
 <Steps>
@@ -149,7 +153,7 @@ The Batch API takes up to 100,000 requests in one call, with a ceiling of 256 MB
 To review everything you've submitted previously, call `GET /batches`. Include an `Idempotency-Key` header on submission so a client retry after a dropped connection replays your original reservation instead of creating a duplicate batch. See [Idempotent Requests](/idempotency).
 
 <Warning>
-  Omit the field and batch items default to `metadata.completion_window: "standard"`. If you set it, the value must be either `"standard"` or `"flex"` — batch items reject the low-latency `"asap"` and `"priority"` tiers. When latency matters, fan out through the [Responses API](#fan-out-with-the-responses-api) instead. The [Completion Windows](/completion-windows) page lists every tier and the models that support it.
+  Batch items run on the `standard` window, and that's the default if you omit the field — the low-latency **Now** (`asap`) tier isn't available for batch. When latency matters, fan out through the [Responses API](#fan-out-with-the-responses-api) instead. See [Inference modes](/inference-modes) for the realtime-versus-async-versus-batch tradeoff, and [Completion windows](/completion-windows) for per-model support.
 </Warning>
 
 This version scores the same review backlog as one batch:

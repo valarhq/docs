@@ -1,0 +1,273 @@
+---
+title: "Endpoints"
+description: "Routes for spend, balance, activity, and time-series usage metrics"
+---
+
+## GET /v1/usage
+
+Summarizes spending and balance over the time range you request.
+
+| Parameter | Values                       | Default | Description                                     |
+| --------- | ---------------------------- | ------- | ----------------------------------------------- |
+| `range`   | `24h`, `7d`, `30d`, `period` | `30d`   | Time window. `period` = current billing period. |
+
+```bash theme={null}
+curl -s -H "Authorization: Bearer $VALAR_API_KEY" \
+  "https://usage.valarhq.ai/v1/usage?range=7d" | jq
+```
+
+```json theme={null}
+{
+  "object": "usage.summary",
+  "range": "7d",
+  "period_spend": 5432,
+  "burn_rate": 776,
+  "balance": 10000,
+  "balance_unavailable": false,
+  "days_remaining": 12,
+  "plan_type": "self_serve",
+  "model_count": 3,
+  "tokens": {
+    "total": 1000000,
+    "input": 600000,
+    "output": 350000,
+    "cached": 50000
+  },
+  "avg_cost_per_day": 776,
+  "sla_mix": {
+    "asap": 0.3,
+    "standard": 0.7
+  },
+  "prior_period": {
+    "period_spend": 4000,
+    "model_count": 2,
+    "tokens": {
+      "total": 800000,
+      "input": 500000,
+      "output": 280000,
+      "cached": 20000
+    },
+    "avg_cost_per_day": 571
+  }
+}
+```
+
+<Info>
+  Every monetary value is expressed in **cents**. The `prior_period` block
+  mirrors the same-length window directly preceding your requested range, so you
+  can compare the two.
+</Info>
+
+<Note>
+  The keys in `sla_mix` are [completion window](/completion-windows) names:
+  `asap` (the **Now** tier) and `standard`.
+</Note>
+
+***
+
+## GET /v1/usage/breakdown
+
+Provides per-model rankings alongside time-series spend data — ideal for building charts.
+
+| Parameter | Values                              | Default | Description                                                       |
+| --------- | ----------------------------------- | ------- | ----------------------------------------------------------------- |
+| `range`   | `24h`, `7d`, `30d`, `period`, `day` | `30d`   | Time window.                                                      |
+| `date`    | `YYYY-MM-DD`                        | —       | Required when `range=day`. Drills into hourly data for that date. |
+
+```bash theme={null}
+curl -s -H "Authorization: Bearer $VALAR_API_KEY" \
+  "https://usage.valarhq.ai/v1/usage/breakdown?range=7d" | jq
+```
+
+```json theme={null}
+{
+  "object": "usage.breakdown",
+  "range": "7d",
+  "granularity": "day",
+  "data": [
+    {
+      "timestamp": "2025-01-15",
+      "total": 800,
+      "models": {
+        "zai-org/GLM-5.1-FP8": {
+          "total": 500,
+          "tokens": 50000,
+          "input_tokens": 30000,
+          "output_tokens": 15000,
+          "cached_tokens": 5000
+        }
+      },
+      "slas": { "standard": 800 }
+    }
+  ],
+  "models": [
+    {
+      "model": "zai-org/GLM-5.1-FP8",
+      "total": 3500,
+      "tokens": 350000,
+      "input_tokens": 210000,
+      "output_tokens": 105000,
+      "cached_tokens": 35000,
+      "slas": { "standard": 3500 },
+      "percentage": 0.65
+    }
+  ]
+}
+```
+
+For 7d, 30d, and period ranges `granularity` is `"day"`; for a 24h range or a day drill-down it is `"hour"`.
+
+***
+
+## GET /v1/usage/activity
+
+Surfaces operational metrics — request counts, token throughput, latency, and a list of recent requests.
+
+| Parameter | Values    | Default | Description                          |
+| --------- | --------- | ------- | ------------------------------------ |
+| `limit`   | `1`–`100` | `10`    | Number of recent requests to return. |
+
+```bash theme={null}
+curl -s -H "Authorization: Bearer $VALAR_API_KEY" \
+  https://usage.valarhq.ai/v1/usage/activity | jq
+```
+
+```json theme={null}
+{
+  "object": "usage.activity",
+  "available": true,
+  "requests": {
+    "last_1m": 5,
+    "last_1h": 120,
+    "last_24h": 2000,
+    "last_7d": 14000
+  },
+  "tokens": {
+    "last_1m": 500,
+    "last_1h": 12000,
+    "last_24h": 200000,
+    "last_7d": 1400000,
+    "token_breakdown_1h": {
+      "input": 8000,
+      "output": 3500,
+      "cached": 500
+    }
+  },
+  "latency": {
+    "avg_1m_ms": 1200,
+    "avg_1h_ms": 1500
+  },
+  "recent_requests": [
+    {
+      "response_id": "resp_abc123",
+      "model": "zai-org/GLM-5.1-FP8",
+      "sla": "standard",
+      "status": "completed",
+      "created_at": "2025-01-15T10:00:00Z",
+      "updated_at": "2025-01-15T10:01:00Z"
+    }
+  ],
+  "has_more": false
+}
+```
+
+A `has_more` value of `true` means more recent requests exist beyond the `limit` you asked for.
+
+<Note>
+  Like the other endpoints, activity data lags slightly and is not delivered as
+  a real-time stream.
+</Note>
+
+***
+
+## GET /v1/usage/activity/timeseries
+
+Returns bucketed series for either requests or tokens — use it to draw throughput charts.
+
+| Parameter | Values               | Default    | Description                                                  |
+| --------- | -------------------- | ---------- | ------------------------------------------------------------ |
+| `type`    | `requests`, `tokens` | `requests` | What to chart.                                               |
+| `range`   | `1h`, `6h`, `24h`    | `24h`      | Time window. Bucket size: 1min / 5min / 1 hour respectively. |
+
+**Requests by model:**
+
+```bash theme={null}
+curl -s -H "Authorization: Bearer $VALAR_API_KEY" \
+  "https://usage.valarhq.ai/v1/usage/activity/timeseries?type=requests&range=1h" | jq
+```
+
+```json theme={null}
+{
+  "object": "usage.activity.timeseries",
+  "type": "requests",
+  "range": "1h",
+  "available": true,
+  "series": [
+    {
+      "time_bucket": "2025-01-15T10:00:00Z",
+      "model": "zai-org/GLM-5.1-FP8",
+      "count": 5
+    },
+    {
+      "time_bucket": "2025-01-15T10:01:00Z",
+      "model": "zai-org/GLM-5.1-FP8",
+      "count": 3
+    }
+  ]
+}
+```
+
+**Token breakdown:**
+
+```bash theme={null}
+curl -s -H "Authorization: Bearer $VALAR_API_KEY" \
+  "https://usage.valarhq.ai/v1/usage/activity/timeseries?type=tokens&range=24h" | jq
+```
+
+```json theme={null}
+{
+  "object": "usage.activity.timeseries",
+  "type": "tokens",
+  "range": "24h",
+  "available": true,
+  "series": [
+    {
+      "time_bucket": "2025-01-15T10:00:00Z",
+      "total_tokens": 1000,
+      "input_tokens": 600,
+      "output_tokens": 350,
+      "cached_tokens": 50
+    }
+  ]
+}
+```
+
+***
+
+## Errors
+
+Errors share the format used throughout the inference API:
+
+```json theme={null}
+{
+  "error": {
+    "message": "Missing or invalid Authorization header",
+    "type": "authentication_error",
+    "param": null,
+    "code": null
+  }
+}
+```
+
+| HTTP Status | `type`                  | When                                                 |
+| ----------- | ----------------------- | ---------------------------------------------------- |
+| 400         | `invalid_request_error` | Bad query parameter, missing required param          |
+| 400         | `idempotency_error`     | Idempotency key reused with a different request body |
+| 401         | `authentication_error`  | Missing, invalid, or expired API key                 |
+| 402         | `billing_error`         | Key disabled due to insufficient credits             |
+| 429         | `rate_limit_error`      | Rate limit exceeded (includes `Retry-After` header)  |
+| 500         | `api_error`             | Internal server error                                |
+
+## Response headers
+
+Each response carries an `X-Request-ID: <uuid>`. Quote it in [support requests](mailto:support@valarhq.ai) to speed up troubleshooting.

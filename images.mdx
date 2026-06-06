@@ -201,5 +201,3 @@ Every image problem surfaces as a `400`. The message tells you which check faile
 ## Choosing between URL and base64
 
 When the bytes are already on hand, a base64 data URI usually beats handing Valar a URL to fetch. Note that image bytes are never cached between requests, so each request re-sends or re-fetches its images.
-
-When a multimodal base model also supports LoRA serving, image inputs and LoRAs work together in the same request — see [LoRAs](/loras).

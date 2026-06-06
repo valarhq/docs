@@ -1,0 +1,77 @@
+---
+title: "Errors"
+description: "The exception hierarchy raised by Traces and inference calls"
+---
+
+Every exception the SDK raises descends from `valar.ValarError`. Catch that base
+class to handle anything the SDK can throw, or catch a narrower subclass to
+respond to a specific failure. Note that only the blocking Trace delivery calls —
+`flush`, `complete`, and `fail` — raise; `event()` never raises network errors.
+
+```text theme={null}
+ValarError
+├─ TraceError
+│  └─ TraceHTTPError
+│     └─ TraceNotFoundError
+├─ InferenceError
+│  └─ InferenceHTTPError
+```
+
+A typical handler narrows from the specific case to the general one:
+
+```python theme={null}
+import valar
+
+try:
+    valar.trace.complete(message="done")
+except valar.TraceNotFoundError:
+    ...  # the Trace no longer exists for this API key
+except valar.TraceError as exc:
+    ...  # any other Trace delivery failure
+```
+
+## Trace errors
+
+<AccordionGroup>
+  <Accordion title="TraceError">
+    The base class for Trace SDK failures — a flush that timed out, or a buffer
+    that filled while a terminal event was being preserved, for instance.
+    Subclass of `ValarError`.
+  </Accordion>
+  <Accordion title="TraceHTTPError">
+    Raised when the Trace API responds with an HTTP error. Subclass of
+    `TraceError`.
+
+    <ResponseField name="status_code" type="int">
+      HTTP status code.
+    </ResponseField>
+    <ResponseField name="response" type="dict | None">
+      Parsed error response body.
+    </ResponseField>
+  </Accordion>
+  <Accordion title="TraceNotFoundError">
+    Raised on HTTP 404, when no Trace matches the current API key. As a subclass
+    of `TraceHTTPError`, it carries `status_code` and `response`.
+  </Accordion>
+</AccordionGroup>
+
+## Inference errors
+
+<AccordionGroup>
+  <Accordion title="InferenceError">
+    The base class for [inference](/traces-sdk-inference) wrapper failures. It
+    fires when `stream=True` is passed — unsupported in v0 — or when no API key
+    is configured. Subclass of `ValarError`.
+  </Accordion>
+  <Accordion title="InferenceHTTPError">
+    Raised when a Valar inference endpoint returns a non-2xx response. Subclass
+    of `InferenceError`.
+
+    <ResponseField name="status_code" type="int">
+      HTTP status code.
+    </ResponseField>
+    <ResponseField name="response" type="dict | None">
+      Parsed error response body.
+    </ResponseField>
+  </Accordion>
+</AccordionGroup>
