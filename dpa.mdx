@@ -23,52 +23,52 @@ The Customer is the **controller** of the data it sends to Valar and decides whi
 
 ## 2. Scope of data processed
 
-ValarAI may handle two categories of data, defined above: **Customer Content** and **Job metadata**.
+Valar may handle two categories of data, defined above: **Customer Content** and **Job metadata**.
 
 ## 3. Permitted and prohibited uses
 
-ValarAI uses Customer data for **two purposes only**:
+Valar uses Customer data for **two purposes only**:
 
 1. running the inference job the Customer has requested, and
 2. operating the service capabilities that job depends on — routing, scheduling, and job-state tracking.
 
-ValarAI will **not**:
+Valar will **not**:
 
-- use Customer Content to train, fine-tune, or otherwise improve any machine learning model, whether ValarAI's own or a third party's;
+- use Customer Content to train, fine-tune, or otherwise improve any machine learning model, whether Valar's own or a third party's;
 - use Customer Content for marketing or advertising; or
 - collect telemetry from GPU machines that would capture Customer Content.
 
 ## 4. Storage and retention
 
-| Aspect | How ValarAI handles it |
+| Aspect | How Valar handles it |
 | --- | --- |
 | Persistent storage | Customer Content is stored persistently only in **Amazon S3 buckets**, unless the Customer opts for the customer-owned bucket arrangement below. |
 | Transient processing | Everything else happens **transiently and in-memory only**, lasting no longer than the job itself. |
-| Automatic deletion | ValarAI's production S3 buckets carry an automated deletion rule (an S3 bucket lifecycle policy) that removes Customer Content soon after processing. Timing can shift due to job retries, failures, or other operational factors. **In no event will ValarAI hold Customer Content for more than 48 hours.** |
+| Automatic deletion | Valar's production S3 buckets carry an automated deletion rule (an S3 bucket lifecycle policy) that removes Customer Content soon after processing. Timing can shift due to job retries, failures, or other operational factors. **In no event will Valar hold Customer Content for more than 48 hours.** |
 | Customer-owned buckets (optional) | Customers wanting tighter control over storage configuration and retention may elect to use their own **Customer-owned S3 buckets**. |
 
 ## 5. Security and access controls
 
-ValarAI protects Customer data with controls that include the following.
+Valar protects Customer data with controls that include the following.
 
-- **Authenticated GPU machines.** Inference GPU machines connect to ValarAI infrastructure over TLS (certificate transparency required) and authenticate with a high-entropy bearer token. They are never publicly reachable.
+- **Authenticated GPU machines.** Inference GPU machines connect to Valar infrastructure over TLS (certificate transparency required) and authenticate with a high-entropy bearer token. They are never publicly reachable.
 - **Restricted connectivity.** Inference machines reach only the services they need:
   - container registry
   - routing service
   - object storage (e.g. Amazon S3)
-- **Data center assurance.** ValarAI relies on cloud and data center providers that maintain **SOC 2** and **ISO 27001** assurance programs.
-- **Compute provider restrictions.** ValarAI may draw on several compute subprocessors, subject to two conditions:
+- **Data center assurance.** Valar relies on cloud and data center providers that maintain **SOC 2** and **ISO 27001** assurance programs.
+- **Compute provider restrictions.** Valar may draw on several compute subprocessors, subject to two conditions:
   - they are barred from accessing Customer Content, and
   - they must never store Customer Content unencrypted.
 
 ## 6. Subprocessors
 
-ValarAI engages third-party providers for infrastructure such as compute, container distribution, routing, and job-state tracking. With the sole exception of Amazon S3 as described in Section 4, subprocessors never store Customer data. ValarAI may update its subprocessors from time to time.
+Valar engages third-party providers for infrastructure such as compute, container distribution, routing, and job-state tracking. With the sole exception of Amazon S3 as described in Section 4, subprocessors never store Customer data. Valar may update its subprocessors from time to time.
 
 ## 7. Security incident notification
 
-If ValarAI becomes aware of a security incident involving unauthorized access to Customer Personal Data, it will notify the Customer **within 72 hours** of becoming aware.
+If Valar becomes aware of a security incident involving unauthorized access to Customer Personal Data, it will notify the Customer **within 72 hours** of becoming aware.
 
 ## 8. Questions
 
-Direct any questions about this document or about how ValarAI handles Customer data to [**neil@valarhq.ai**](mailto:neil@valarhq.ai).
+Direct any questions about this document or about how Valar handles Customer data to [**neil@valarhq.ai**](mailto:neil@valarhq.ai).

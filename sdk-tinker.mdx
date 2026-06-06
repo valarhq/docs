@@ -1,12 +1,12 @@
 ---
 title: "Tinker"
-description: "Sample ValarAI models from a Tinker RL or training loop using valar.ValarTokenCompleter and get_tinker_checkpoint_signed_url"
+description: "Sample Valar models from a Tinker RL or training loop using valar.ValarTokenCompleter and get_tinker_checkpoint_signed_url"
 ---
 
 The `valar.tinker` helpers let a
 [Tinker](https://tinker-docs.thinkingmachines.ai/) RL or training loop sample
-from ValarAI-hosted models. They map Tinker's token-level sampling interface
-onto ValarAI's raw-token Responses path, optionally apply a LoRA adapter, and
+from Valar-hosted models. They map Tinker's token-level sampling interface
+onto Valar's raw-token Responses path, optionally apply a LoRA adapter, and
 stream logprobs back to your trainer.
 
 <Note>
@@ -66,7 +66,7 @@ stream logprobs back to your trainer.
 
 ## valar.ValarTokenCompleter
 
-A Tinker `TokenCompleter` backed by ValarAI's raw-token Responses API.
+A Tinker `TokenCompleter` backed by Valar's raw-token Responses API.
 
 ```python theme={null}
 ValarTokenCompleter(
@@ -92,7 +92,7 @@ ValarTokenCompleter(
 | `max_tokens` | **Required.** Token budget for generation; must be `> 0`, or `ValueError` is raised. |
 | `temperature` | Sampling temperature. Default `1.0`. |
 | `top_p` | Nucleus sampling cutoff. Default `1.0`. |
-| `lora` | A ValarAI-registered LoRA adapter to apply. Cannot be combined with `tinker_lora_signed_url`. |
+| `lora` | A Valar-registered LoRA adapter to apply. Cannot be combined with `tinker_lora_signed_url`. |
 | `tinker_lora_signed_url` | Signed URL to a Tinker checkpoint archive (see [`get_tinker_checkpoint_signed_url`](#get-tinker-checkpoint-signed-url)). Requires `adapter_config`. Cannot be combined with `lora`. |
 | `adapter_config` | LoRA adapter config as a mapping or JSON string. **Required** when `tinker_lora_signed_url` is set. |
 | `tinker_lora_name` | Optional human-readable name for the Tinker LoRA. |
@@ -125,7 +125,7 @@ The result is a Tinker `TokensWithLogprobs`:
 | `maybe_logprobs` | `list[float] \| None` — per-token logprobs, or `None` when the response carried none. |
 | `stop_reason` | The model's stop reason (such as `"stop"` or `"length"`), falling back to the response `status` or `"unknown"`. |
 
-A malformed ValarAI response — missing `output_text`, missing or non-integer
+A malformed Valar response — missing `output_text`, missing or non-integer
 `token_ids`, or mismatched token and logprob lengths — raises
 [`valar.InferenceError`](/traces-sdk-errors) with the offending response
 attached as `exc.response`.

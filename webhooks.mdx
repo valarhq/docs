@@ -3,7 +3,7 @@ title: "Webhooks"
 description: "Receive a callback when a background request finishes instead of polling for it"
 ---
 
-When a request can take a while to finish, you don't have to poll `GET /v1/responses/{response_id}` in a loop. Attach a callback URL to the request and ValarAI delivers the finished result to your server as an HTTP POST. The feature works on `POST /v1/responses`, `POST /v1/chat/completions`, and `POST /v1/messages`, and is configured entirely through two `metadata` keys.
+When a request can take a while to finish, you don't have to poll `GET /v1/responses/{response_id}` in a loop. Attach a callback URL to the request and Valar delivers the finished result to your server as an HTTP POST. The feature works on `POST /v1/responses`, `POST /v1/chat/completions`, and `POST /v1/messages`, and is configured entirely through two `metadata` keys.
 
 ## Parameters
 
@@ -14,7 +14,7 @@ Both keys live inside the `metadata` object on the create request. The same keys
 </ParamField>
 
 <ParamField path="metadata.webhook_token" type="string">
-  An optional shared secret. ValarAI sends its value as a Bearer token in the callback's `Authorization` header so your endpoint can confirm the request is genuine.
+  An optional shared secret. Valar sends its value as a Bearer token in the callback's `Authorization` header so your endpoint can confirm the request is genuine.
 </ParamField>
 
 ## Set up an endpoint
@@ -80,7 +80,7 @@ Both keys live inside the `metadata` object on the create request. The same keys
   </Step>
 </Steps>
 
-## What ValarAI sends
+## What Valar sends
 
 The callback is a single POST request.
 
@@ -149,6 +149,6 @@ You can point a real request at a listener on your own machine.
       }'
     ```
 
-    When the response finishes, ValarAI POSTs the full payload to your listener.
+    When the response finishes, Valar POSTs the full payload to your listener.
   </Step>
 </Steps>

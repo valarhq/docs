@@ -1,6 +1,6 @@
 ---
 title: "Building a Tool-Calling Agent"
-description: "Wire external tools into a multi-turn ValarAI conversation and let the model orchestrate them"
+description: "Wire external tools into a multi-turn Valar conversation and let the model orchestrate them"
 ---
 
 An agent is a model that can reach outside the conversation: it asks to run a function you control, reads what comes back, and decides what to do next. The Responses API at `/v1/responses` exposes exactly the primitives you need for this — tool definitions on the way in, `function_call` items on the way out, and `function_call_output` items to feed results back in.
@@ -160,7 +160,7 @@ print("Turn 2:", second.output_text)
   Set `strict: true` on each tool's parameters. This enables structured-output guarantees, so the `arguments` JSON the model returns always conforms to your schema and `json.loads` never trips over a malformed payload.
 </Tip>
 
-- **Prefer** `background=True `**for anything long-running.** ValarAI optimizes for throughput, so an individual request can run longer than a latency-first API would. Background mode avoids HTTP timeouts and lets you poll for completion instead.
+- **Prefer** `background=True `**for anything long-running.** Valar optimizes for throughput, so an individual request can run longer than a latency-first API would. Background mode avoids HTTP timeouts and lets you poll for completion instead.
 - **Match the completion window to your loop.** The default `standard` window balances cost against trajectory time for most agents. Use `priority` when a single turn is latency-sensitive, or `flex` for background work that can wait in a queue. See [Completion windows](/completion-windows) for response-time and pricing details.
 - **Replay the complete conversation every request.** Every prior message, all `response.output` items, and every `function_call_output` must be present. Output items drop back in without conversion.
 - **Handle parallel calls.** A single response can contain several `function_call` items at once; execute them all and return one `function_call_output` per `call_id`.

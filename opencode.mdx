@@ -1,14 +1,14 @@
 ---
-title: "Using OpenCode with ValarAI"
-description: "Run the OpenCode coding agent against ValarAI models through a single provider block."
+title: "Using OpenCode with Valar"
+description: "Run the OpenCode coding agent against Valar models through a single provider block."
 hidden: true
 ---
 
-[OpenCode](https://opencode.ai) is an open-source terminal coding agent. It talks to any backend that speaks the OpenAI-compatible protocol, and ValarAI does — so connecting them is purely a matter of adding one provider entry to your OpenCode config.
+[OpenCode](https://opencode.ai) is an open-source terminal coding agent. It talks to any backend that speaks the OpenAI-compatible protocol, and Valar does — so connecting them is purely a matter of adding one provider entry to your OpenCode config.
 
 ## How the pieces fit
 
-OpenCode reads a JSONC config file and routes model requests to whichever provider you register. You register ValarAI under the key `valar`, point it at `https://api.valarhq.ai/v1`, and list the models you want to use. From then on you reference any ValarAI model as `valar/<model-id>` — for example `valar/zai-org/GLM-5.1-FP8`.
+OpenCode reads a JSONC config file and routes model requests to whichever provider you register. You register Valar under the key `valar`, point it at `https://api.valarhq.ai/v1`, and list the models you want to use. From then on you reference any Valar model as `valar/<model-id>` — for example `valar/zai-org/GLM-5.1-FP8`.
 
 ## Get set up
 
@@ -20,8 +20,8 @@ OpenCode reads a JSONC config file and routes model requests to whichever provid
     curl -fsSL https://opencode.ai/install | bash
     ```
   </Step>
-  <Step title="Create a ValarAI API key">
-    Sign in at [ValarAI](https://app.valarhq.ai) and generate an API key. Keep it handy for the next step.
+  <Step title="Create a Valar API key">
+    Sign in at [Valar](https://app.valarhq.ai) and generate an API key. Keep it handy for the next step.
   </Step>
   <Step title="Create the config directory">
     ```bash
@@ -68,10 +68,10 @@ Launch OpenCode from your project directory:
 opencode
 ```
 
-Once it's running, type `/models`, search for "ValarAI", and switch between any of the models you defined. OpenCode will route each request through the `valar` provider to ValarAI.
+Once it's running, type `/models`, search for "Valar", and switch between any of the models you defined. OpenCode will route each request through the `valar` provider to Valar.
 
 <Accordion title="Adding a model later">
-  Whenever ValarAI ships a model you want to use, add one line under `provider.valar.models` with its model ID and a display name, then reference it as `valar/<model-id>`:
+  Whenever Valar ships a model you want to use, add one line under `provider.valar.models` with its model ID and a display name, then reference it as `valar/<model-id>`:
 
   ```jsonc
   "models": {

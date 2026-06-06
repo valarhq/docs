@@ -3,7 +3,7 @@ title: "Inference"
 description: "Run inference that links itself to the active trace timeline"
 ---
 
-`valar.inference` is a thin layer over ValarAI's hosted inference endpoints. A
+`valar.inference` is a thin layer over Valar's hosted inference endpoints. A
 call POSTs your JSON payload exactly as given and returns the raw JSON response as
 a `dict` — nothing is reshaped. The value it adds is correlation: when a
 [Trace](/traces-sdk) is active, the wrapper tags the request with the current

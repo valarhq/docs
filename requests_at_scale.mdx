@@ -1,9 +1,9 @@
 ---
 title: "Sending Requests at Scale"
-description: "Move tens of thousands of requests through ValarAI without serializing them one by one"
+description: "Move tens of thousands of requests through Valar without serializing them one by one"
 ---
 
-A loop that fires requests in sequence stalls the moment your workload grows past a few hundred calls. ValarAI gives you two ways to clear large volumes: fan out many concurrent Responses API calls in background mode, or hand a single bundle to the Batch API and let ValarAI work through it. This page covers both, starting with how to choose.
+A loop that fires requests in sequence stalls the moment your workload grows past a few hundred calls. Valar gives you two ways to clear large volumes: fan out many concurrent Responses API calls in background mode, or hand a single bundle to the Batch API and let Valar work through it. This page covers both, starting with how to choose.
 
 ## Which path fits your workload
 
@@ -13,7 +13,7 @@ A loop that fires requests in sequence stalls the moment your workload grows pas
   </Card>
 
   <Card title="Batch API">
-    You have a fixed set of requests and would rather submit once and collect results later. ValarAI owns the queue; you poll for status.
+    You have a fixed set of requests and would rather submit once and collect results later. Valar owns the queue; you poll for status.
   </Card>
 </CardGroup>
 

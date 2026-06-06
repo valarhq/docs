@@ -1,12 +1,12 @@
 ---
 title: "LoRAs"
-description: "Serve your own PEFT-trained LoRA adapters against compatible ValarAI base models"
+description: "Serve your own PEFT-trained LoRA adapters against compatible Valar base models"
 ---
 
-If you have trained a LoRA with PEFT, you can host it on ValarAI and route requests through it. The flow is: upload the adapter, give it a name, let ValarAI validate it against each base model you want, then reference that name (or its ID) in request metadata at inference time.
+If you have trained a LoRA with PEFT, you can host it on Valar and route requests through it. The flow is: upload the adapter, give it a name, let Valar validate it against each base model you want, then reference that name (or its ID) in request metadata at inference time.
 
 <Note>
-  LoRA serving is currently a closed pilot open to select partners. To fine-tune and serve LoRAs on ValarAI, [reach out](mailto:support@valarhq.ai).
+  LoRA serving is currently a closed pilot open to select partners. To fine-tune and serve LoRAs on Valar, [reach out](mailto:support@valarhq.ai).
 </Note>
 
 ## What you can serve it on
@@ -102,7 +102,7 @@ Everything else in the config — `lora_alpha`, `lora_dropout`, bias settings, a
 
     Constraints on the request:
 
-    - Every entry in `supported_models` must be a recognized ValarAI model ID.
+    - Every entry in `supported_models` must be a recognized Valar model ID.
     - `name` is 2 to 64 characters, lowercase `[a-z0-9-]`, must start and end with an alphanumeric, and must be unique within your organization — a duplicate returns `409`.
     - The file IDs must belong to your organization.
   </Step>
@@ -126,7 +126,7 @@ Everything else in the config — `lora_alpha`, `lora_dropout`, bias settings, a
     }
     ```
 
-    ValarAI validates against every listed model. Poll `GET /v1/loras/{name}` until the model you plan to use has finished:
+    Valar validates against every listed model. Poll `GET /v1/loras/{name}` until the model you plan to use has finished:
 
     | Validation status | Meaning |
     | ----------------- | ------- |
@@ -134,12 +134,12 @@ Everything else in the config — `lora_alpha`, `lora_dropout`, bias settings, a
     | `running` | The validation request is underway. |
     | `succeeded` | The LoRA loaded and completed a validation request for that model. |
     | `failed` | The LoRA cannot be used for that model. Check `result_code` and `result_message`. |
-    | `unverified` | ValarAI could not validate automatically. |
+    | `unverified` | Valar could not validate automatically. |
 
     A request using the LoRA is rejected only when that model's most recent validation is `failed`. Records in `pending`, `running`, or `unverified` remain usable.
 
     <Note>
-      Attach more models later with `PATCH /v1/loras/{name}`. ValarAI creates validation records for any newly added models that have not already passed.
+      Attach more models later with `PATCH /v1/loras/{name}`. Valar creates validation records for any newly added models that have not already passed.
     </Note>
   </Step>
 

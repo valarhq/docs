@@ -3,7 +3,7 @@ title: "Image Input"
 description: "Send images alongside text to multimodal base models using the Responses, Chat Completions, or Messages APIs"
 ---
 
-Multimodal base models on ValarAI accept images mixed into the text of a request. Each image travels one of two ways: inline as a base64 data URI, or by reference as an HTTP(S) URL that ValarAI fetches on your behalf.
+Multimodal base models on Valar accept images mixed into the text of a request. Each image travels one of two ways: inline as a base64 data URI, or by reference as an HTTP(S) URL that Valar fetches on your behalf.
 
 Before you wire up a request, confirm three things: the model accepts images, your images fall inside the size and format limits, and the URLs you reference are publicly reachable.
 
@@ -34,7 +34,7 @@ Image support is per model. The [Models](/models) page is the source of truth â€
 </ParamField>
 
 <ParamField path="URL fetch" type="string">
-  URLs must be `http://` or `https://` and reachable on the public internet. ValarAI gives up after 10 s and returns `400`.
+  URLs must be `http://` or `https://` and reachable on the public internet. Valar gives up after 10 s and returns `400`.
 </ParamField>
 
 ## Pass an image per API
@@ -200,6 +200,6 @@ Every image problem surfaces as a `400`. The message tells you which check faile
 
 ## Choosing between URL and base64
 
-When the bytes are already on hand, a base64 data URI usually beats handing ValarAI a URL to fetch. Note that image bytes are never cached between requests, so each request re-sends or re-fetches its images.
+When the bytes are already on hand, a base64 data URI usually beats handing Valar a URL to fetch. Note that image bytes are never cached between requests, so each request re-sends or re-fetches its images.
 
 When a multimodal base model also supports LoRA serving, image inputs and LoRAs work together in the same request â€” see [LoRAs](/loras).

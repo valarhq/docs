@@ -1,9 +1,9 @@
 ---
 title: "API Support Matrix"
-description: "What each ValarAI inference API accepts today, and what isn't wired up yet"
+description: "What each Valar inference API accepts today, and what isn't wired up yet"
 ---
 
-ValarAI gives you four endpoints. Three are inference surfaces shaped after APIs you already know, and one batches work asynchronously:
+Valar gives you four endpoints. Three are inference surfaces shaped after APIs you already know, and one batches work asynchronously:
 
 | API | Endpoint | Maturity |
 | --- | --- | --- |
@@ -179,7 +179,7 @@ Each accordion below lists what the API accepts and what it rejects. Open the on
 
     **Authenticating with the Anthropic SDK**
 
-    Authentication uses `Authorization: Bearer <key>`; ValarAI does not accept the Anthropic `x-api-key` header. With the Anthropic SDK, supply your key through `auth_token` rather than `api_key`:
+    Authentication uses `Authorization: Bearer <key>`; Valar does not accept the Anthropic `x-api-key` header. With the Anthropic SDK, supply your key through `auth_token` rather than `api_key`:
 
     ```python
     from anthropic import Anthropic

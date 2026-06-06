@@ -8,7 +8,7 @@ hidden: true
 
 A `POST` that times out or returns a `5xx` leaves you guessing. The server may have received the request and run the inference, or it may not have. Retrying blindly risks running — and billing — the same job twice. Not retrying risks dropping a job that never actually completed.
 
-An idempotency key removes the guesswork. You attach a key to the first attempt, ValarAI stores the response under that key, and every later attempt with the same key returns that stored response instead of running inference again. Retrying becomes safe across flaky networks, timeouts, and ambiguous `5xx` responses.
+An idempotency key removes the guesswork. You attach a key to the first attempt, Valar stores the response under that key, and every later attempt with the same key returns that stored response instead of running inference again. Retrying becomes safe across flaky networks, timeouts, and ambiguous `5xx` responses.
 
 ## How it works
 
@@ -45,7 +45,7 @@ The first call reserves the key and runs the job. Each subsequent call with that
 </ParamField>
 
 <ParamField path="Body fingerprint" type="SHA-256">
-  ValarAI fingerprints the request body. Reusing a key with a meaningfully different body returns `400 idempotency_error` rather than the earlier response, which prevents a retry from silently returning the wrong answer after the client changed the request.
+  Valar fingerprints the request body. Reusing a key with a meaningfully different body returns `400 idempotency_error` rather than the earlier response, which prevents a retry from silently returning the wrong answer after the client changed the request.
 </ParamField>
 
 <ParamField path="Validation failures" type="key not consumed">

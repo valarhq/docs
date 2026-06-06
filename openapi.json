@@ -1,9 +1,9 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "ValarAI API",
+    "title": "Valar API",
     "version": "2026-02-18",
-    "description": "ValarAI exposes Responses and Chat Completions endpoints that match the OpenAI shape, alongside a Messages endpoint that matches the Anthropic shape. This reference covers the fields ValarAI supports today."
+    "description": "Valar exposes Responses and Chat Completions endpoints that match the OpenAI shape, alongside a Messages endpoint that matches the Anthropic shape. This reference covers the fields Valar supports today."
   },
   "servers": [
     {
@@ -103,7 +103,7 @@
         "properties": {
           "completion_window": {
             "type": "string",
-            "description": "The [completion window](/completion-windows), or latency tier, you want for this request. Check the [Pricing](/pricing) page to see which windows each model supports. If you leave it out, ValarAI picks `standard` when the model supports it; otherwise it falls back to `flex` for async requests on models that allow it, and to `asap` everywhere else. See [default behavior](/completion-windows#default-behavior).",
+            "description": "The [completion window](/completion-windows), or latency tier, you want for this request. Check the [Pricing](/pricing) page to see which windows each model supports. If you leave it out, Valar picks `standard` when the model supports it; otherwise it falls back to `flex` for async requests on models that allow it, and to `asap` everywhere else. See [default behavior](/completion-windows#default-behavior).",
             "enum": [
               "asap",
               "priority",
@@ -295,7 +295,7 @@
         "additionalProperties": false
       },
       "ResponseInput": {
-        "description": "Accepts text, and image input (input_image) when you target a multimodal model. ValarAI does not yet accept audio, files, or item references.",
+        "description": "Accepts text, and image input (input_image) when you target a multimodal model. Valar does not yet accept audio, files, or item references.",
         "oneOf": [
           {
             "type": "string",
@@ -460,7 +460,7 @@
           },
           "prompt_cache_key": {
             "type": "string",
-            "description": "An optional hint ValarAI uses to keep prompt-prefix caches local. Requests sharing a key are steered toward the same place so you hit the cache more often."
+            "description": "An optional hint Valar uses to keep prompt-prefix caches local. Requests sharing a key are steered toward the same place so you hit the cache more often."
           },
           "store": {
             "type": "boolean",
@@ -1473,12 +1473,12 @@
               "type": "object",
               "additionalProperties": true
             },
-            "description": "Allowed so the Anthropic SDK stays happy, but ValarAI ignores it for now. The model never sees these tools and cannot invoke them."
+            "description": "Allowed so the Anthropic SDK stays happy, but Valar ignores it for now. The model never sees these tools and cannot invoke them."
           },
           "tool_choice": {
             "type": "object",
             "additionalProperties": true,
-            "description": "Allowed so the Anthropic SDK stays happy, but ValarAI ignores it for now."
+            "description": "Allowed so the Anthropic SDK stays happy, but Valar ignores it for now."
           },
           "stream": {
             "type": "boolean",
@@ -1637,7 +1637,7 @@
           "type": "string",
           "maxLength": 255
         },
-        "description": "Lets you retry safely. ValarAI records a reservation under the combination of organization, API key, and Idempotency-Key, so sending the same value again hands back the stored response rather than running inference a second time. Values can be up to 255 characters. See [Idempotent Requests](/idempotency) for the complete rules."
+        "description": "Lets you retry safely. Valar records a reservation under the combination of organization, API key, and Idempotency-Key, so sending the same value again hands back the stored response rather than running inference a second time. Values can be up to 255 characters. See [Idempotent Requests](/idempotency) for the complete rules."
       },
       "AnthropicIdempotencyKey": {
         "name": "anthropic-idempotency-key",
@@ -1746,7 +1746,7 @@
             }
           },
           "400": {
-            "description": "Your request was malformed or asked for something ValarAI does not support.",
+            "description": "Your request was malformed or asked for something Valar does not support.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1766,7 +1766,7 @@
             }
           },
           "500": {
-            "description": "Something went wrong on ValarAI's side.",
+            "description": "Something went wrong on Valar's side.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1847,7 +1847,7 @@
             }
           },
           "500": {
-            "description": "Something went wrong on ValarAI's side.",
+            "description": "Something went wrong on Valar's side.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1913,7 +1913,7 @@
             }
           },
           "400": {
-            "description": "Your request was malformed or asked for something ValarAI does not support.",
+            "description": "Your request was malformed or asked for something Valar does not support.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1943,7 +1943,7 @@
             }
           },
           "500": {
-            "description": "Something went wrong on ValarAI's side.",
+            "description": "Something went wrong on Valar's side.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2000,7 +2000,7 @@
             }
           },
           "400": {
-            "description": "Your request was malformed or asked for something ValarAI does not support.",
+            "description": "Your request was malformed or asked for something Valar does not support.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2030,7 +2030,7 @@
             }
           },
           "500": {
-            "description": "Something went wrong on ValarAI's side.",
+            "description": "Something went wrong on Valar's side.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2049,7 +2049,7 @@
           "Batches API"
         ],
         "summary": "Create a batch",
-        "description": "Send a group of requests for ValarAI to process in the background.",
+        "description": "Send a group of requests for Valar to process in the background.",
         "parameters": [
           {
             "$ref": "#/components/parameters/IdempotencyKey"
@@ -2158,7 +2158,7 @@
             }
           },
           "500": {
-            "description": "Something went wrong on ValarAI's side.",
+            "description": "Something went wrong on Valar's side.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2274,7 +2274,7 @@
             }
           },
           "500": {
-            "description": "Something went wrong on ValarAI's side.",
+            "description": "Something went wrong on Valar's side.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2399,7 +2399,7 @@
             }
           },
           "500": {
-            "description": "Something went wrong on ValarAI's side.",
+            "description": "Something went wrong on Valar's side.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2481,7 +2481,7 @@
             }
           },
           "500": {
-            "description": "Something went wrong on ValarAI's side.",
+            "description": "Something went wrong on Valar's side.",
             "content": {
               "application/json": {
                 "schema": {

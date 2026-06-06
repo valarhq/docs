@@ -9,7 +9,7 @@ But a growing share of AI work is asynchronous. Agents, batch jobs, labeling, da
 
 ## How requests work
 
-ValarAI speaks the [OpenAI Responses API](https://developers.openai.com/api/reference/resources/responses/methods/create) at `/v1/responses`, reachable under the base URL `https://api.valarhq.ai/v1`. Any OpenAI-compatible client works once you repoint its base URL and key.
+Valar speaks the [OpenAI Responses API](https://developers.openai.com/api/reference/resources/responses/methods/create) at `/v1/responses`, reachable under the base URL `https://api.valarhq.ai/v1`. Any OpenAI-compatible client works once you repoint its base URL and key.
 
 Because agent work is rarely interactive, the API leans on a `background` mode. Send `background: true` and the request returns a response id straight away instead of blocking; you then retrieve that id until the job reports `completed`. Pair that with [completion windows](/completion-windows) to trade latency for price, and you can keep large batches in flight without holding open a connection per request.
 
