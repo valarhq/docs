@@ -12,7 +12,7 @@ Valar optimizes for throughput and cost on long-running agent work, not the late
 
 A normal synchronous request that returns the result immediately. You send the call without `background` and read the output from the response. This is the lowest-latency path, finishing in seconds, and it runs on the **Now** completion window.
 
-Realtime works across the [Responses API](/api-reference/responses-api/create-a-response) (`/v1/responses`), Chat Completions (`/v1/chat/completions`), and Messages (`/v1/messages`). Use it for interactive chat, prototyping, and human-in-the-loop steps.
+Realtime uses the [Responses API](/api-reference/responses-api/create-a-response) (`/v1/responses`). Use it for interactive chat, prototyping, and human-in-the-loop steps.
 
 ```python theme={null}
 import os

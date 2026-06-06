@@ -114,14 +114,6 @@
             ]
           },
           {
-            "group": "Chat completions",
-            "pages": ["api-reference/chat-completions-api/create-a-chat-completion"]
-          },
-          {
-            "group": "Messages",
-            "pages": ["api-reference/messages-api/create-an-anthropic-message"]
-          },
-          {
             "group": "Batches",
             "pages": [
               "api-reference/batches-api/list-batches",

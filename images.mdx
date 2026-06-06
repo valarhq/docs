@@ -1,6 +1,6 @@
 ---
 title: "Image Input"
-description: "Send images alongside text to multimodal base models using the Responses, Chat Completions, or Messages APIs"
+description: "Send images alongside text to multimodal base models on the Responses API"
 ---
 
 Multimodal base models on Valar accept images mixed into the text of a request. Each image travels one of two ways: inline as a base64 data URI, or by reference as an HTTP(S) URL that Valar fetches on your behalf.
@@ -37,151 +37,58 @@ Image support is per model. The [Models](/models) page is the source of truth â€
   URLs must be `http://` or `https://` and reachable on the public internet. Valar gives up after 10 s and returns `400`.
 </ParamField>
 
-## Pass an image per API
+## Pass an image
 
-The content block differs by API surface. Each tab below shows the URL form first, then the base64 form, so you can match whichever client you already use.
+Drop an `input_image` block into the message `content` array. Its `image_url` holds either a public URL or a data URI.
 
-<Tabs>
-  <Tab title="Responses">
-    Drop an `input_image` block into the message `content` array. Its `image_url` holds either a public URL or a data URI.
+```python theme={null}
+from openai import OpenAI
 
-    ```python theme={null}
-    from openai import OpenAI
+client = OpenAI(base_url="https://api.valarhq.ai/v1", api_key="YOUR_KEY")
 
-    client = OpenAI(base_url="https://api.valarhq.ai/v1", api_key="YOUR_KEY")
+response = client.responses.create(
+    model="moonshotai/Kimi-K2.6",
+    input=[
+        {
+            "role": "user",
+            "content": [
+                {"type": "input_text", "text": "Describe this photo."},
+                {
+                    "type": "input_image",
+                    "image_url": "https://example.com/storefront.jpg",
+                },
+            ],
+        }
+    ],
+    background=True,
+)
+```
 
-    response = client.responses.create(
-        model="moonshotai/Kimi-K2.6",
-        input=[
-            {
-                "role": "user",
-                "content": [
-                    {"type": "input_text", "text": "Describe this photo."},
-                    {
-                        "type": "input_image",
-                        "image_url": "https://example.com/storefront.jpg",
-                    },
-                ],
-            }
-        ],
-        background=True,
-    )
-    ```
+To send the bytes inline, build a data URI and pass it in the same `image_url` field:
 
-    To send the bytes inline, build a data URI and pass it in the same `image_url` field:
+```python theme={null}
+import base64, pathlib
 
-    ```python theme={null}
-    import base64, pathlib
+raw = pathlib.Path("storefront.jpg").read_bytes()
+b64 = base64.b64encode(raw).decode()
+data_uri = f"data:image/jpeg;base64,{b64}"
 
-    raw = pathlib.Path("storefront.jpg").read_bytes()
-    b64 = base64.b64encode(raw).decode()
-    data_uri = f"data:image/jpeg;base64,{b64}"
+response = client.responses.create(
+    model="moonshotai/Kimi-K2.6",
+    input=[
+        {
+            "role": "user",
+            "content": [
+                {"type": "input_text", "text": "Describe this photo."},
+                {"type": "input_image", "image_url": data_uri},
+            ],
+        }
+    ],
+    background=True,
+)
+```
 
-    response = client.responses.create(
-        model="moonshotai/Kimi-K2.6",
-        input=[
-            {
-                "role": "user",
-                "content": [
-                    {"type": "input_text", "text": "Describe this photo."},
-                    {"type": "input_image", "image_url": data_uri},
-                ],
-            }
-        ],
-        background=True,
-    )
-    ```
-
-    The optional `detail` field takes `"auto"`, `"low"`, or `"high"`.
-  </Tab>
-
-  <Tab title="Chat Completions">
-    Use the standard OpenAI `image_url` content part. The nested `url` accepts a public URL:
-
-    ```python theme={null}
-    response = client.chat.completions.create(
-        model="moonshotai/Kimi-K2.6",
-        messages=[
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": "Describe this photo."},
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": "https://example.com/storefront.jpg",
-                            "detail": "auto",
-                        },
-                    },
-                ],
-            }
-        ],
-    )
-    ```
-
-    The same `url` field also accepts a data URI:
-
-    ```python theme={null}
-    "image_url": {"url": f"data:image/jpeg;base64,{b64}"}
-    ```
-  </Tab>
-
-  <Tab title="Messages">
-    Use the Anthropic `image` content block, whose `source` accepts a `url` type or a `base64` type.
-
-    ```python theme={null}
-    import anthropic
-
-    client = anthropic.Anthropic(
-        base_url="https://api.valarhq.ai",
-        api_key="YOUR_KEY",
-    )
-
-    # Reference by URL
-    response = client.messages.create(
-        model="moonshotai/Kimi-K2.6",
-        max_tokens=1024,
-        messages=[
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "image",
-                        "source": {"type": "url", "url": "https://example.com/storefront.jpg"},
-                    },
-                    {"type": "text", "text": "Describe this photo."},
-                ],
-            }
-        ],
-    )
-    ```
-
-    For inline bytes, pass the raw base64 string with no `data:` prefix and declare the `media_type`:
-
-    ```python theme={null}
-    response = client.messages.create(
-        model="moonshotai/Kimi-K2.6",
-        max_tokens=1024,
-        messages=[
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "image",
-                        "source": {
-                            "type": "base64",
-                            "media_type": "image/jpeg",
-                            "data": b64,  # raw base64, no data: prefix
-                        },
-                    },
-                    {"type": "text", "text": "Describe this photo."},
-                ],
-            }
-        ],
-    )
-    ```
-  </Tab>
-</Tabs>
+The optional `detail` field takes `"auto"`, `"low"`, or `"high"`.
 
 ## When a request is rejected
 
