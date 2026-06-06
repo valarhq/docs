@@ -1,7 +1,7 @@
 ---
 title: "Structured outputs"
 description: "Constrain a model's response to a JSON schema so you get parseable, predictable JSON"
-keywords: ["json schema", "text.format", "structured output", "json mode"]
+keywords: ["json schema", "response_format", "text.format", "structured output", "json mode"]
 ---
 
 ## What structured outputs are
@@ -14,55 +14,110 @@ Reach for structured outputs when the response feeds code rather than a human:
 - **Extraction** — pull typed fields out of unstructured text, such as turning a support email into `{ category, priority, summary }`.
 - **Downstream automation** — route, store, or act on the result without a brittle post-processing step.
 
-On the [Responses API](/api-reference/responses-api/create-a-response) you request a structured output through the `text.format` field.
+Structured outputs work on both the Responses and Chat Completions APIs. The field you set differs per API, but the JSON Schema you pass is the same.
 
-## Defining a schema
+## Defining a schema per API
 
-Set `text.format` to a `json_schema` object: the schema lives directly under `schema`, alongside a `name` and `strict`. The example below points at `https://api.valarhq.ai/v1`, authenticates with `Authorization: Bearer $VALAR_API_KEY`, and extracts a support ticket into a fixed shape.
+Each tab points at the same base URL, `https://api.valarhq.ai/v1`, and authenticates with `Authorization: Bearer $VALAR_API_KEY`. The example extracts a support ticket into a fixed shape.
 
-<Note>
-  `text.format.type: "json_object"` is **not** supported. Use `json_schema` to constrain the output.
-</Note>
+<Tabs>
+  <Tab title="Responses">
+    On the [Responses API](/api-reference/responses-api/create-a-response), set `text.format` to a `json_schema` object. The schema lives directly under `schema`, alongside a `name` and `strict`.
 
-```python theme={null}
-import json
-from openai import OpenAI
+    <Note>
+      `text.format.type: "json_object"` is **not** supported on the Responses API. Use `json_schema` to constrain the output.
+    </Note>
 
-client = OpenAI(
-    api_key="YOUR_VALAR_API_KEY",  # or rely on the OPENAI_API_KEY / VALAR_API_KEY env var
-    base_url="https://api.valarhq.ai/v1",
-)
+    ```python theme={null}
+    import json
+    from openai import OpenAI
 
-ticket_schema = {
-    "type": "object",
-    "properties": {
-        "category": {
-            "type": "string",
-            "enum": ["billing", "bug", "feature_request", "account", "other"],
+    client = OpenAI(
+        api_key="YOUR_VALAR_API_KEY",  # or rely on the OPENAI_API_KEY / VALAR_API_KEY env var
+        base_url="https://api.valarhq.ai/v1",
+    )
+
+    ticket_schema = {
+        "type": "object",
+        "properties": {
+            "category": {
+                "type": "string",
+                "enum": ["billing", "bug", "feature_request", "account", "other"],
+            },
+            "priority": {"type": "string", "enum": ["low", "medium", "high", "urgent"]},
+            "summary": {"type": "string"},
         },
-        "priority": {"type": "string", "enum": ["low", "medium", "high", "urgent"]},
-        "summary": {"type": "string"},
-    },
-    "required": ["category", "priority", "summary"],
-    "additionalProperties": False,
-}
+        "required": ["category", "priority", "summary"],
+        "additionalProperties": False,
+    }
 
-response = client.responses.create(
-    model="moonshotai/Kimi-K2.6",
-    input="Triage this ticket: 'I was charged twice for my May invoice and need a refund ASAP.'",
-    text={
-        "format": {
+    response = client.responses.create(
+        model="moonshotai/Kimi-K2.6",
+        input="Triage this ticket: 'I was charged twice for my May invoice and need a refund ASAP.'",
+        text={
+            "format": {
+                "type": "json_schema",
+                "name": "support_ticket",
+                "schema": ticket_schema,
+                "strict": True,
+            }
+        },
+    )
+
+    ticket = json.loads(response.output_text)
+    print(ticket["category"], ticket["priority"])
+    ```
+  </Tab>
+
+  <Tab title="Chat completions">
+    On [Chat Completions](/api-reference/chat-completions-api/create-a-chat-completion), set `response_format` to a `json_schema` object. The schema is nested one level deeper, under `json_schema.schema`. This API also accepts `{ "type": "json_object" }` for free-form JSON without a schema.
+
+    ```python theme={null}
+    import json
+    from openai import OpenAI
+
+    client = OpenAI(
+        api_key="YOUR_VALAR_API_KEY",
+        base_url="https://api.valarhq.ai/v1",
+    )
+
+    ticket_schema = {
+        "type": "object",
+        "properties": {
+            "category": {
+                "type": "string",
+                "enum": ["billing", "bug", "feature_request", "account", "other"],
+            },
+            "priority": {"type": "string", "enum": ["low", "medium", "high", "urgent"]},
+            "summary": {"type": "string"},
+        },
+        "required": ["category", "priority", "summary"],
+        "additionalProperties": False,
+    }
+
+    completion = client.chat.completions.create(
+        model="moonshotai/Kimi-K2.6",
+        messages=[
+            {
+                "role": "user",
+                "content": "Triage this ticket: 'I was charged twice for my May invoice and need a refund ASAP.'",
+            }
+        ],
+        response_format={
             "type": "json_schema",
-            "name": "support_ticket",
-            "schema": ticket_schema,
-            "strict": True,
-        }
-    },
-)
+            "json_schema": {
+                "name": "support_ticket",
+                "schema": ticket_schema,
+                "strict": True,
+            },
+        },
+    )
 
-ticket = json.loads(response.output_text)
-print(ticket["category"], ticket["priority"])
-```
+    ticket = json.loads(completion.choices[0].message.content)
+    print(ticket["category"], ticket["priority"])
+    ```
+  </Tab>
+</Tabs>
 
 ## Enforcing the schema with strict
 
@@ -88,5 +143,6 @@ For strict mode to hold, your schema must be one Valar can enforce. A schema tha
 
 ## See also
 
-- [API support matrix](/support) — confirm which structured-output formats each model supports.
+- [API support matrix](/support) — confirm which structured-output formats each model and API support.
 - [Create a response](/api-reference/responses-api/create-a-response) — full `text.format` reference.
+- [Create a chat completion](/api-reference/chat-completions-api/create-a-chat-completion) — full `response_format` reference.

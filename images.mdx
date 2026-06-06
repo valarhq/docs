@@ -1,6 +1,6 @@
 ---
 title: "Image Input"
-description: "Send images alongside text to multimodal base models on the Responses API"
+description: "Send images alongside text to multimodal base models using the Responses or Chat Completions APIs"
 ---
 
 Multimodal base models on Valar accept images mixed into the text of a request. Each image travels one of two ways: inline as a base64 data URI, or by reference as an HTTP(S) URL that Valar fetches on your behalf.
@@ -37,58 +37,95 @@ Image support is per model. The [Models](/models) page is the source of truth â€
   URLs must be `http://` or `https://` and reachable on the public internet. Valar gives up after 10 s and returns `400`.
 </ParamField>
 
-## Pass an image
+## Pass an image per API
 
-Drop an `input_image` block into the message `content` array. Its `image_url` holds either a public URL or a data URI.
+The content block differs by API surface. Each tab below shows the URL form first, then the base64 form, so you can match whichever client you already use.
 
-```python theme={null}
-from openai import OpenAI
+<Tabs>
+  <Tab title="Responses">
+    Drop an `input_image` block into the message `content` array. Its `image_url` holds either a public URL or a data URI.
 
-client = OpenAI(base_url="https://api.valarhq.ai/v1", api_key="YOUR_KEY")
+    ```python theme={null}
+    from openai import OpenAI
 
-response = client.responses.create(
-    model="moonshotai/Kimi-K2.6",
-    input=[
-        {
-            "role": "user",
-            "content": [
-                {"type": "input_text", "text": "Describe this photo."},
-                {
-                    "type": "input_image",
-                    "image_url": "https://example.com/storefront.jpg",
-                },
-            ],
-        }
-    ],
-    background=True,
-)
-```
+    client = OpenAI(base_url="https://api.valarhq.ai/v1", api_key="YOUR_KEY")
 
-To send the bytes inline, build a data URI and pass it in the same `image_url` field:
+    response = client.responses.create(
+        model="moonshotai/Kimi-K2.6",
+        input=[
+            {
+                "role": "user",
+                "content": [
+                    {"type": "input_text", "text": "Describe this photo."},
+                    {
+                        "type": "input_image",
+                        "image_url": "https://example.com/storefront.jpg",
+                    },
+                ],
+            }
+        ],
+        background=True,
+    )
+    ```
 
-```python theme={null}
-import base64, pathlib
+    To send the bytes inline, build a data URI and pass it in the same `image_url` field:
 
-raw = pathlib.Path("storefront.jpg").read_bytes()
-b64 = base64.b64encode(raw).decode()
-data_uri = f"data:image/jpeg;base64,{b64}"
+    ```python theme={null}
+    import base64, pathlib
 
-response = client.responses.create(
-    model="moonshotai/Kimi-K2.6",
-    input=[
-        {
-            "role": "user",
-            "content": [
-                {"type": "input_text", "text": "Describe this photo."},
-                {"type": "input_image", "image_url": data_uri},
-            ],
-        }
-    ],
-    background=True,
-)
-```
+    raw = pathlib.Path("storefront.jpg").read_bytes()
+    b64 = base64.b64encode(raw).decode()
+    data_uri = f"data:image/jpeg;base64,{b64}"
 
-The optional `detail` field takes `"auto"`, `"low"`, or `"high"`.
+    response = client.responses.create(
+        model="moonshotai/Kimi-K2.6",
+        input=[
+            {
+                "role": "user",
+                "content": [
+                    {"type": "input_text", "text": "Describe this photo."},
+                    {"type": "input_image", "image_url": data_uri},
+                ],
+            }
+        ],
+        background=True,
+    )
+    ```
+
+    The optional `detail` field takes `"auto"`, `"low"`, or `"high"`.
+  </Tab>
+
+  <Tab title="Chat Completions">
+    Use the standard OpenAI `image_url` content part. The nested `url` accepts a public URL:
+
+    ```python theme={null}
+    response = client.chat.completions.create(
+        model="moonshotai/Kimi-K2.6",
+        messages=[
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": "Describe this photo."},
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": "https://example.com/storefront.jpg",
+                            "detail": "auto",
+                        },
+                    },
+                ],
+            }
+        ],
+    )
+    ```
+
+    The same `url` field also accepts a data URI:
+
+    ```python theme={null}
+    "image_url": {"url": f"data:image/jpeg;base64,{b64}"}
+    ```
+  </Tab>
+</Tabs>
 
 ## When a request is rejected
 

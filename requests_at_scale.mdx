@@ -153,7 +153,7 @@ The Batch API takes up to 100,000 requests in one call, with a ceiling of 256 MB
 To review everything you've submitted previously, call `GET /batches`. Include an `Idempotency-Key` header on submission so a client retry after a dropped connection replays your original reservation instead of creating a duplicate batch. See [Idempotent Requests](/idempotency).
 
 <Warning>
-  Batch items run on the `standard` window, and that's the default if you omit the field — the low-latency **Now** (`asap`) tier isn't available for batch. When latency matters, fan out through the [Responses API](#fan-out-with-the-responses-api) instead. See [Inference modes](/inference-modes) for the realtime-versus-async-versus-batch tradeoff, and [Completion windows](/completion-windows) for per-model support.
+  Batch items run on the `standard` window, and that's the default if you omit the field — the low-latency **Now** (`asap`) tier isn't available for batch. When latency matters, fan out through the [Responses API](#fan-out-with-the-responses-api) instead. See [Inference modes](/inference-modes) for the realtime-versus-async-versus-batch tradeoff and the completion-window options.
 </Warning>
 
 This version scores the same review backlog as one batch:

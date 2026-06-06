@@ -9,7 +9,7 @@ You pay per token. Three rates apply to each request: **input** for the tokens y
 
 Caching is automatic — Valar matches shared prompt prefixes for you and charges the lower cached rate on the tokens that hit. You can raise your hit rate by passing [`prompt_cache_key`](/api-reference/responses-api/create-a-response#body-prompt-cache-key) as a routing hint, but it's optional.
 
-The rate you pay also depends on the completion window you request. Faster scheduling carries a higher rate, so the on-demand **Now** window costs more than **Standard**. The table prices out the windows available for each model; coverage varies, and you can mix windows per request. [Completion Windows](/completion-windows) explains the trade-offs.
+The rate you pay also depends on the completion window you request. Faster scheduling carries a higher rate, so the on-demand **Now** window costs more than **Standard**. The table prices out the windows available for each model; coverage varies, and you can mix windows per request. [Completion Windows](/inference-modes#completion-windows) explains the trade-offs.
 
 <Note>
   Window coverage differs by model, and we keep adding models and widening window support. If a model or window you want isn't shown, <a href="mailto:support@valarhq.ai">get in touch</a>.

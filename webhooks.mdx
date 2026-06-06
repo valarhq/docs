@@ -3,7 +3,7 @@ title: "Webhooks"
 description: "Receive a callback when a background request finishes instead of polling for it"
 ---
 
-When a request can take a while to finish, you don't have to poll `GET /v1/responses/{response_id}` in a loop. Attach a callback URL to the request and Valar delivers the finished result to your server as an HTTP POST. The feature works on `POST /v1/responses` and is configured entirely through two `metadata` keys.
+When a request can take a while to finish, you don't have to poll `GET /v1/responses/{response_id}` in a loop. Attach a callback URL to the request and Valar delivers the finished result to your server as an HTTP POST. The feature works on `POST /v1/responses` and `POST /v1/chat/completions`, and is configured entirely through two `metadata` keys.
 
 ## Parameters
 

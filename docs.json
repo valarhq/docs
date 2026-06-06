@@ -87,7 +87,6 @@
             "group": "Run in production",
             "icon": "gauge-high",
             "pages": [
-              "completion-windows",
               "webhooks",
               "idempotency"
             ]
@@ -114,6 +113,10 @@
             ]
           },
           {
+            "group": "Chat completions",
+            "pages": ["api-reference/chat-completions-api/create-a-chat-completion"]
+          },
+          {
             "group": "Batches",
             "pages": [
               "api-reference/batches-api/list-batches",
@@ -135,6 +138,7 @@
     ]
   },
   "redirects": [
-    { "source": "/supported-models", "destination": "/models" }
+    { "source": "/supported-models", "destination": "/models" },
+    { "source": "/completion-windows", "destination": "/inference-modes#completion-windows" }
   ]
 }

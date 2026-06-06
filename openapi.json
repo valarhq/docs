@@ -3,7 +3,7 @@
   "info": {
     "title": "Valar API",
     "version": "2026-02-18",
-    "description": "Valar exposes a Responses endpoint that matches the OpenAI shape. This reference documents the fields Valar supports today."
+    "description": "Valar exposes Responses and Chat Completions endpoints that match the OpenAI shape. This reference documents the fields Valar supports today."
   },
   "servers": [
     {
@@ -23,6 +23,10 @@
     {
       "name": "Responses API",
       "description": "Responses endpoints that follow the OpenAI interface."
+    },
+    {
+      "name": "Chat Completions API",
+      "description": "Chat Completions endpoints that follow the OpenAI interface."
     },
     {
       "name": "Batches API",
@@ -95,7 +99,7 @@
         "properties": {
           "completion_window": {
             "type": "string",
-            "description": "The [completion window](/completion-windows), or latency tier, you want for this request. `asap` is the on-demand **Now** tier; `standard` is the lower-cost default. Check the [Pricing](/pricing) page to see which windows each model supports. If you leave it out, Valar picks `standard` when the model supports it and falls back to `asap` otherwise. See [default behavior](/completion-windows#default-behavior).",
+            "description": "The [completion window](/inference-modes#completion-windows), or latency tier, you want for this request. `asap` is the on-demand **Now** tier; `standard` is the lower-cost default. Check the [Pricing](/pricing) page to see which windows each model supports. If you leave it out, Valar picks `standard` when the model supports it and falls back to `asap` otherwise. See [default behavior](/inference-modes#default-behavior).",
             "enum": [
               "asap",
               "standard"
@@ -693,6 +697,577 @@
         },
         "additionalProperties": true
       },
+      "ChatTextContentPart": {
+        "type": "object",
+        "required": [
+          "type",
+          "text"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "text"
+            ]
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ChatImageContentPart": {
+        "type": "object",
+        "description": "An image content part. You can only send image input to multimodal models; check the Models page to see which ones qualify.",
+        "required": [
+          "type",
+          "image_url"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "image_url"
+            ]
+          },
+          "image_url": {
+            "type": "object",
+            "required": [
+              "url"
+            ],
+            "properties": {
+              "url": {
+                "type": "string",
+                "description": "Either a publicly reachable http(s) URL or a base64 data URI."
+              },
+              "detail": {
+                "type": "string",
+                "enum": [
+                  "auto",
+                  "low",
+                  "high"
+                ]
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "ChatCompletionMessage": {
+        "type": "object",
+        "required": [
+          "role"
+        ],
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "system",
+              "user",
+              "assistant",
+              "tool",
+              "function",
+              "developer"
+            ]
+          },
+          "content": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ChatTextContentPart"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ChatImageContentPart"
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "tool_calls": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "tool_call_id": {
+            "type": "string"
+          },
+          "function_call": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ChatResponseFormatText": {
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "text"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "ChatResponseFormatJsonSchema": {
+        "type": "object",
+        "required": [
+          "type",
+          "json_schema"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "json_schema"
+            ]
+          },
+          "json_schema": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              },
+              "strict": {
+                "type": "boolean"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreateChatCompletionRequest": {
+        "type": "object",
+        "required": [
+          "model",
+          "messages"
+        ],
+        "properties": {
+          "model": {
+            "type": "string"
+          },
+          "messages": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/components/schemas/ChatCompletionMessage"
+            }
+          },
+          "temperature": {
+            "oneOf": [
+              {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 2
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "top_p": {
+            "oneOf": [
+              {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "max_completion_tokens": {
+            "oneOf": [
+              {
+                "type": "integer",
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "response_format": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ChatResponseFormatText"
+              },
+              {
+                "$ref": "#/components/schemas/ChatResponseFormatJsonSchema"
+              }
+            ]
+          },
+          "reasoning_effort": {
+            "oneOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "minimal",
+                  "low",
+                  "medium",
+                  "high",
+                  "xhigh"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "n": {
+            "type": "integer",
+            "enum": [
+              1
+            ],
+            "description": "Must be 1; requesting multiple choices is not supported yet."
+          },
+          "modalities": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 1,
+            "items": {
+              "type": "string",
+              "enum": [
+                "text"
+              ]
+            }
+          },
+          "stream": {
+            "type": "boolean",
+            "description": "Set this to true to receive the answer as a Server-Sent Events stream of chat.completion.chunk objects rather than one JSON payload."
+          },
+          "stream_options": {
+            "type": "object",
+            "description": "Settings that only take effect while streaming (stream is true).",
+            "properties": {
+              "include_usage": {
+                "type": "boolean",
+                "description": "Set this to true to receive one final chunk carrying token usage for the whole request, sent just ahead of the [DONE] terminator."
+              }
+            },
+            "additionalProperties": false
+          },
+          "store": {
+            "type": "boolean",
+            "enum": [
+              true
+            ],
+            "description": "Must be true; no other value is accepted."
+          },
+          "user": {
+            "type": "string",
+            "maxLength": 256
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/RequestMetadata"
+          }
+        },
+        "additionalProperties": true
+      },
+      "ChatCompletionResponseMessage": {
+        "type": "object",
+        "required": [
+          "role",
+          "content"
+        ],
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "assistant"
+            ]
+          },
+          "content": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reasoning_content": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "refusal": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": true
+      },
+      "ChatCompletionChoice": {
+        "type": "object",
+        "required": [
+          "index",
+          "message",
+          "logprobs",
+          "finish_reason"
+        ],
+        "properties": {
+          "index": {
+            "type": "integer"
+          },
+          "message": {
+            "$ref": "#/components/schemas/ChatCompletionResponseMessage"
+          },
+          "logprobs": {
+            "type": "null"
+          },
+          "finish_reason": {
+            "type": "string",
+            "enum": [
+              "stop",
+              "length",
+              "tool_calls",
+              "content_filter",
+              "function_call"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "ChatCompletionUsage": {
+        "type": "object",
+        "required": [
+          "prompt_tokens",
+          "completion_tokens",
+          "total_tokens"
+        ],
+        "properties": {
+          "prompt_tokens": {
+            "type": "integer"
+          },
+          "completion_tokens": {
+            "type": "integer"
+          },
+          "total_tokens": {
+            "type": "integer"
+          },
+          "prompt_tokens_details": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "completion_tokens_details": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ChatCompletionResponse": {
+        "type": "object",
+        "required": [
+          "id",
+          "object",
+          "created",
+          "model",
+          "choices"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "object": {
+            "type": "string",
+            "enum": [
+              "chat.completion"
+            ]
+          },
+          "created": {
+            "type": "integer"
+          },
+          "model": {
+            "type": "string"
+          },
+          "choices": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/components/schemas/ChatCompletionChoice"
+            }
+          },
+          "usage": {
+            "$ref": "#/components/schemas/ChatCompletionUsage"
+          }
+        },
+        "additionalProperties": true
+      },
+      "ChatCompletionChunkToolCallFunction": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "arguments": {
+            "type": "string"
+          },
+          "input": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ChatCompletionChunkToolCall": {
+        "type": "object",
+        "properties": {
+          "index": {
+            "type": "integer"
+          },
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "function": {
+            "$ref": "#/components/schemas/ChatCompletionChunkToolCallFunction"
+          },
+          "custom": {
+            "$ref": "#/components/schemas/ChatCompletionChunkToolCallFunction"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ChatCompletionChunkDelta": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "reasoning_content": {
+            "type": "string"
+          },
+          "refusal": {
+            "type": "string"
+          },
+          "tool_calls": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChatCompletionChunkToolCall"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "ChatCompletionChunkChoice": {
+        "type": "object",
+        "required": [
+          "index",
+          "delta"
+        ],
+        "properties": {
+          "index": {
+            "type": "integer"
+          },
+          "delta": {
+            "$ref": "#/components/schemas/ChatCompletionChunkDelta"
+          },
+          "logprobs": {
+            "type": "null"
+          },
+          "finish_reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "stop",
+              "tool_calls",
+              null
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "ChatCompletionChunk": {
+        "type": "object",
+        "description": "A single Server-Sent Events chunk produced while stream is true. The full streamed reply arrives as a series of these chat.completion.chunk objects, each delivered on its own SSE data: line, with a closing data: [DONE] line at the end.",
+        "required": [
+          "id",
+          "object",
+          "created",
+          "model",
+          "choices"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "object": {
+            "type": "string",
+            "enum": [
+              "chat.completion.chunk"
+            ]
+          },
+          "created": {
+            "type": "integer"
+          },
+          "model": {
+            "type": "string"
+          },
+          "choices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChatCompletionChunkChoice"
+            }
+          },
+          "usage": {
+            "$ref": "#/components/schemas/ChatCompletionUsage"
+          }
+        },
+        "additionalProperties": false
+      },
       "BatchRequestItem": {
         "type": "object",
         "required": [
@@ -958,6 +1533,102 @@
           },
           "404": {
             "description": "No response exists for that ID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Something went wrong on Valar's side.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/chat/completions": {
+      "post": {
+        "operationId": "createChatCompletion",
+        "tags": [
+          "Chat Completions API"
+        ],
+        "summary": "Create a chat completion",
+        "description": "A Chat Completions endpoint that follows the OpenAI interface. Pass stream: true to stream the reply back as Server-Sent Events made up of chat.completion.chunk objects.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateChatCompletionRequest"
+              },
+              "example": {
+                "model": "zai-org/GLM-5.1-FP8",
+                "messages": [
+                  {
+                    "role": "system",
+                    "content": "You are a concise assistant."
+                  },
+                  {
+                    "role": "user",
+                    "content": "Summarize retrieval-augmented generation in 3 bullets."
+                  }
+                ],
+                "max_completion_tokens": 300
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The chat completion. By default this is one JSON object; with stream: true it becomes a Server-Sent Events stream of chat.completion.chunk objects closed by a final data: [DONE] line.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatCompletionResponse"
+                }
+              },
+              "text/event-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatCompletionChunk"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Your request was malformed or asked for something Valar does not support.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "We could not authenticate the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "The request timed out before the result was ready.",
             "content": {
               "application/json": {
                 "schema": {
