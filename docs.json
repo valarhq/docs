@@ -52,8 +52,7 @@
               "index",
               "quickstart",
               "inference-modes",
-              "models",
-              "pricing"
+              "models"
             ]
           },
           {
@@ -89,16 +88,14 @@
             "icon": "gauge-high",
             "pages": [
               "completion-windows",
-              "webhooks",
-              "idempotency"
+              "webhooks"
             ]
           },
           {
             "group": "Platform",
             "icon": "shield-halved",
             "pages": [
-              "support",
-              "dpa"
+              "support"
             ]
           }
         ]
@@ -130,31 +127,6 @@
               "api-reference/batches-api/get-batch-status",
               "api-reference/batches-api/get-batch-request-result"
             ]
-          },
-          {
-            "group": "Models",
-            "pages": ["api-reference/models-api/list-supported-models"]
-          },
-          {
-            "group": "Usage",
-            "pages": ["usage", "usage-endpoints"]
-          }
-        ]
-      },
-      {
-        "tab": "SDK",
-        "groups": [
-          {
-            "group": "Overview",
-            "pages": ["sdk-introduction", "sdk-configuration"]
-          },
-          {
-            "group": "Traces",
-            "pages": ["traces-sdk", "traces-sdk-inference", "traces-sdk-errors"]
-          },
-          {
-            "group": "Integrations",
-            "pages": ["sdk-tinker"]
           }
         ]
       }
