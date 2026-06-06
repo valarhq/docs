@@ -44,9 +44,9 @@
     "tabs": [
       {
         "tab": "Documentation",
-        "menu": [
+        "groups": [
           {
-            "item": "Getting started",
+            "group": "Getting started",
             "icon": "flag",
             "pages": [
               "index",
@@ -57,7 +57,7 @@
             ]
           },
           {
-            "item": "Build agents",
+            "group": "Build agents",
             "icon": "robot",
             "pages": [
               "agents",
@@ -66,7 +66,7 @@
             ]
           },
           {
-            "item": "Integrations",
+            "group": "Integrations",
             "icon": "plug",
             "pages": [
               "opencode",
@@ -76,7 +76,7 @@
             ]
           },
           {
-            "item": "Inputs and adapters",
+            "group": "Inputs and adapters",
             "icon": "layer-group",
             "pages": [
               "images",
@@ -85,7 +85,7 @@
             "hidden": true
           },
           {
-            "item": "Run in production",
+            "group": "Run in production",
             "icon": "gauge-high",
             "pages": [
               "completion-windows",
@@ -94,7 +94,7 @@
             ]
           },
           {
-            "item": "Platform",
+            "group": "Platform",
             "icon": "shield-halved",
             "pages": [
               "support",
