@@ -24,7 +24,7 @@ The running example throughout is sentiment scoring for a backlog of product rev
 Submit each request individually with `background=True` and run many in flight at once. For workloads of roughly 1,000 requests and up, four practices keep it stable:
 
 - **Use** `AsyncOpenAI `**with** `DefaultAioHttpClient()`**.** Under high concurrency the SDK's aiohttp backend outperforms the default `httpx` transport.
-- **Bound concurrency with an** `asyncio.Semaphore`**.** A fixed limit — 200 is a sound starting point — caps simultaneous connections so you never exhaust them.
+- **Bound concurrency with an** `asyncio.Semaphore`**.** A fixed limit (200 is a sound starting point) caps simultaneous connections so you never exhaust them.
 - **Submit all requests behind the semaphore, collect the response IDs, then poll in a second pass.** Separating submission from polling keeps both phases simple.
 - **Attach an** `Idempotency-Key `**per request** so a retry after a transient failure replays the reservation rather than paying for inference twice. See [Idempotent Requests](/idempotency).
 
@@ -51,14 +51,10 @@ REVIEW_TEMPLATE = (
 
 async def main(num_requests: int, max_output_tokens: int, model: str):
     async with AsyncOpenAI(
-        base_url="https://api.valarhq.ai/v1",
-        api_key="YOUR_KEY_HERE",
+	    base_url="https://api.valarhq.ai/v1", # or read OPENAI_BASE_URL from the environment
+    	api_key="YOUR_VALAR_API_KEY",  # or read OPENAI_API_KEY from the environment
         http_client=DefaultAioHttpClient(),
     ) as client:
-        # Confirm the model is available in this environment.
-        models = await client.models.list()
-        print("Supported models:", [m.id for m in models.data])
-
         submit_sem = asyncio.Semaphore(200)
         submit_bar = tqdm(total=num_requests, desc="Submitting")
 
@@ -89,11 +85,13 @@ async def main(num_requests: int, max_output_tokens: int, model: str):
             for _ in range(3600):  # up to ~1 hour
                 async with poll_sem:
                     response = await client.responses.retrieve(response_id)
-                if response.status == "completed":
+					if response.status in {"queued", "in_progress"}:
+					    asyncio.sleep.sleep(1)
+						continue
+
                     completed[response_id] = response
-                    poll_bar.update(1)
-                    return
-                await asyncio.sleep(1)
+					poll_bar.update(1)
+					return				
             print(f"Timed out waiting for {response_id}")
 
         await asyncio.gather(*[poll(rid) for rid in response_ids])

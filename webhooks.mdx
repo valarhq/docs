@@ -13,7 +13,7 @@ Both keys live inside the `metadata` object on the create request.
   The destination URL for the callback. Must be an `http` or `https` URL. If you omit it or pass a value that can't be used, no callback is sent and the request itself is unaffected.
 </ParamField>
 
-<ParamField path="metadata.webhook_token" type="string">
+<ParamField path="metadata.completion_webhook_token" type="string">
   An optional shared secret. Valar sends its value as a Bearer token in the callback's `Authorization` header so your endpoint can confirm the request is genuine.
 </ParamField>
 
@@ -54,12 +54,12 @@ Both keys live inside the `metadata` object on the create request.
 
     <CodeGroup>
 
-    ```python
+    ```python File 1
     from openai import OpenAI
     
     client = OpenAI(
-        api_key="YOUR_VALAR_API_KEY",
-        base_url="https://api.valarhq.ai/v1",
+        base_url="https://api.valarhq.ai/v1", # or read OPENAI_BASE_URL from the environment
+        api_key="YOUR_VALAR_API_KEY",  # or read OPENAI_API_KEY from the environment
     )
     
     response = client.responses.create(
@@ -68,12 +68,9 @@ Both keys live inside the `metadata` object on the create request.
         background=True,
         metadata={
             "completion_webhook": "https://app.example.com/hooks/inference-done",
-            "webhook_token": "whk_3f0a9c2e7b14",
+            "completion_webhook_token": "whk_3f0a9c2e7b14",
         },
     )
-    ```
-
-    ```bash
     ```
 
     </CodeGroup>
@@ -93,7 +90,7 @@ The callback is a single POST request.
 </ResponseField>
 
 <ResponseField name="Authorization" type="header">
-  Present only when `webhook_token` was set. Carries `Bearer <webhook_token>`.
+  Present only when `completion_webhook_token` was set. Carries `Bearer <completion_webhook_token>`.
 </ResponseField>
 
 <ResponseField name="body" type="object">
@@ -133,6 +130,23 @@ You can point a real request at a listener on your own machine.
     ```
 
     Copy the `https://xxxx.ngrok-free.app` forwarding URL from the output.
+  </Step>
+  <Step title="Submit a request against the tunnel">
+    ```bash
+    curl -X POST https://api.valarhq.ai/v1/responses \
+      -H "Authorization: Bearer YOUR_VALAR_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "model": "zai-org/GLM-5.1-FP8",
+        "input": "What is 2+2? Reply with just the number.",
+        "background": true,
+        "metadata": {
+          "completion_webhook": "https://xxxx.ngrok-free.app"
+        }
+      }'
+    ```
+
+    When the response finishes, ValarAI POSTs the full payload to your listener.
   </Step>
   <Step title="Submit a request against the tunnel">
     ```bash

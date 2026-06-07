@@ -66,16 +66,6 @@
             ]
           },
           {
-            "group": "Integrations",
-            "icon": "plug",
-            "pages": [
-              "opencode",
-              "integrations/langchain",
-              "integrations/vercel-ai",
-              "integrations/openai-agents"
-            ]
-          },
-          {
             "group": "Inputs and adapters",
             "icon": "layer-group",
             "pages": [
@@ -95,7 +85,8 @@
             "group": "Platform",
             "icon": "shield-halved",
             "pages": [
-              "dpa"
+              "dpa",
+              "support"
             ]
           }
         ]

@@ -9,7 +9,7 @@ Before you wire up a request, confirm three things: the model accepts images, yo
 
 ## Confirm the model is multimodal
 
-Image support is per model. The [Models](/models) page is the source of truth — a checkmark in the **Image** column means the model accepts the content blocks shown below.
+Image support is per model. The [Models](/models) page is the source of truth, a checkmark in the **Image** column means the model accepts the content blocks shown below.
 
 <Warning>
   Sending image content to a model that is not multimodal returns `400` with `model '<id>' does not support image input`.
@@ -45,11 +45,14 @@ The content block differs by API surface. Each tab below shows the URL form firs
   <Tab title="Responses">
     Drop an `input_image` block into the message `content` array. Its `image_url` holds either a public URL or a data URI.
 
-    ```python theme={null}
+    ```python
     from openai import OpenAI
-
-    client = OpenAI(base_url="https://api.valarhq.ai/v1", api_key="YOUR_KEY")
-
+    
+    client = OpenAI(
+        base_url="https://api.valarhq.ai/v1", # or read OPENAI_BASE_URL from the environment
+        api_key="YOUR_VALAR_API_KEY",  # or read OPENAI_API_KEY from the environment
+    )
+    
     response = client.responses.create(
         model="moonshotai/Kimi-K2.6",
         input=[
@@ -70,13 +73,13 @@ The content block differs by API surface. Each tab below shows the URL form firs
 
     To send the bytes inline, build a data URI and pass it in the same `image_url` field:
 
-    ```python theme={null}
+    ```python
     import base64, pathlib
-
+    
     raw = pathlib.Path("storefront.jpg").read_bytes()
     b64 = base64.b64encode(raw).decode()
     data_uri = f"data:image/jpeg;base64,{b64}"
-
+    
     response = client.responses.create(
         model="moonshotai/Kimi-K2.6",
         input=[
@@ -94,11 +97,10 @@ The content block differs by API surface. Each tab below shows the URL form firs
 
     The optional `detail` field takes `"auto"`, `"low"`, or `"high"`.
   </Tab>
-
   <Tab title="Chat Completions">
     Use the standard OpenAI `image_url` content part. The nested `url` accepts a public URL:
 
-    ```python theme={null}
+    ```python
     response = client.chat.completions.create(
         model="moonshotai/Kimi-K2.6",
         messages=[
@@ -121,7 +123,7 @@ The content block differs by API surface. Each tab below shows the URL form firs
 
     The same `url` field also accepts a data URI:
 
-    ```python theme={null}
+    ```python
     "image_url": {"url": f"data:image/jpeg;base64,{b64}"}
     ```
   </Tab>
@@ -132,7 +134,7 @@ The content block differs by API surface. Each tab below shows the URL form firs
 Every image problem surfaces as a `400`. The message tells you which check failed:
 
 | Status | Message | Cause |
-| ------ | ------- | ----- |
+| --- | --- | --- |
 | 400 | `model '<id>' does not support image input` | The model is not multimodal. |
 | 400 | `too many images: maximum 20 images per request` | The request carried more than 20 images. |
 | 400 | `image too large: exceeds maximum of ... bytes` | An image was larger than 20 MB once decoded. |

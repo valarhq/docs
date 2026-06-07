@@ -6,13 +6,13 @@ hidden: true
 
 ## The problem retries create
 
-A `POST` that times out or returns a `5xx` leaves you guessing. The server may have received the request and run the inference, or it may not have. Retrying blindly risks running — and billing — the same job twice. Not retrying risks dropping a job that never actually completed.
+A `POST` that times out or returns a `5xx` leaves you guessing. The server may have received the request and run the inference, or it may not have. Retrying blindly risks running and billing the same job twice. Not retrying risks dropping a job that never actually completed.
 
 An idempotency key removes the guesswork. You attach a key to the first attempt, Valar stores the response under that key, and every later attempt with the same key returns that stored response instead of running inference again. Retrying becomes safe across flaky networks, timeouts, and ambiguous `5xx` responses.
 
 ## How it works
 
-Send the key in the `Idempotency-Key` request header. Use one key per logical request — a UUID or any unique string up to 255 characters — and send the same key on the first attempt and every retry.
+Send the key in the `Idempotency-Key` request header. Use one key per logical request (a UUID or any unique string up to 255 characters) and send the same key on the first attempt and every retry.
 
 <CodeGroup>
 
@@ -20,8 +20,8 @@ Send the key in the `Idempotency-Key` request header. Use one key per logical re
 from openai import OpenAI
 
 client = OpenAI(
-    api_key="YOUR_VALAR_API_KEY",
-    base_url="https://api.valarhq.ai/v1",
+    base_url="https://api.valarhq.ai/v1", # or read OPENAI_BASE_URL from the environment
+    api_key="YOUR_VALAR_API_KEY",  # or read OPENAI_API_KEY from the environment
 )
 
 response = client.responses.create(
@@ -29,9 +29,6 @@ response = client.responses.create(
     input="Summarize this document.",
     extra_headers={"Idempotency-Key": "order-9f8e7d6c"},
 )
-```
-
-```bash
 ```
 
 </CodeGroup>
@@ -62,45 +59,10 @@ Reach for the same idempotency key whenever the outcome is ambiguous. Don't retr
 
 | Signal | What it means | What to do |
 | --- | --- | --- |
-| Network error / timeout | Ambiguous — the server may or may not have received the request | Retry with the same idempotency key |
+| Network error / timeout | Ambiguous - the server may or may not have received the request | Retry with the same idempotency key |
 | `5xx` on a POST | Transient server-side failure | Retry with the same idempotency key |
 | `429` \+ `Retry-After` | Rate limit | Wait the `Retry-After` value, then retry |
 | `body.status: "failed"` | Inference genuinely failed | Investigate the cause; do not blind-retry |
-
-## A retry loop with backoff
-
-Generate the key once, outside the loop, so every attempt shares it.
-
-```python
-import random
-import time
-import uuid
-import requests
-
-API_KEY = "YOUR_VALAR_API_KEY"
-BASE_URL = "https://api.valarhq.ai/v1"
-
-# One key, reused across every retry.
-headers = {
-    "Authorization": f"Bearer {API_KEY}",
-    "Content-Type": "application/json",
-    "Idempotency-Key": str(uuid.uuid4()),
-}
-body = {"model": "zai-org/GLM-5.1-FP8", "input": "Summarize this document."}
-
-for attempt in range(5):
-    try:
-        resp = requests.post(f"{BASE_URL}/responses", headers=headers, json=body, timeout=30)
-        resp.raise_for_status()
-        break
-    except requests.RequestException:
-        # Network error or 5xx — safe to retry, the key dedupes server-side.
-        time.sleep(random.uniform(0, 2**attempt))
-else:
-    raise RuntimeError("all retries exhausted")
-
-print(resp.json()["id"])
-```
 
 ## See also
 

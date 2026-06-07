@@ -29,14 +29,14 @@ Valar may handle two categories of data, defined above: **Customer Content** and
 
 Valar uses Customer data for **two purposes only**:
 
-1. running the inference job the Customer has requested, and
-2. operating the service capabilities that job depends on — routing, scheduling, and job-state tracking.
+1. Running the inference job the Customer has requested, and
+2. Operating the service capabilities that job depends on: routing, scheduling, and job-state tracking.
 
 Valar will **not**:
 
-- use Customer Content to train, fine-tune, or otherwise improve any machine learning model, whether Valar's own or a third party's;
-- use Customer Content for marketing or advertising; or
-- collect telemetry from GPU machines that would capture Customer Content.
+- Use Customer Content to train, fine-tune, or otherwise improve any machine learning model, whether Valar's own or a third party's;
+- Use Customer Content for marketing or advertising; or
+- Collect telemetry from GPU machines that would capture Customer Content.
 
 ## 4. Storage and retention
 
@@ -53,13 +53,13 @@ Valar protects Customer data with controls that include the following.
 
 - **Authenticated GPU machines.** Inference GPU machines connect to Valar infrastructure over TLS (certificate transparency required) and authenticate with a high-entropy bearer token. They are never publicly reachable.
 - **Restricted connectivity.** Inference machines reach only the services they need:
-  - container registry
-  - routing service
-  - object storage (e.g. Amazon S3)
+  - Container registry
+  - Routing service
+  - Object storage (e.g. Amazon S3)
 - **Data center assurance.** Valar relies on cloud and data center providers that maintain **SOC 2** and **ISO 27001** assurance programs.
 - **Compute provider restrictions.** Valar may draw on several compute subprocessors, subject to two conditions:
-  - they are barred from accessing Customer Content, and
-  - they must never store Customer Content unencrypted.
+  - They are barred from accessing Customer Content, and
+  - They must never store Customer Content unencrypted.
 
 ## 6. Subprocessors
 

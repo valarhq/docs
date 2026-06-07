@@ -12,15 +12,15 @@ Valar optimizes for throughput and cost on long-running agent work, not the late
 
 A normal synchronous request that returns the result immediately. You send the call without `background` and read the output from the response. This is the lowest-latency path, finishing in seconds, and it runs on the **Now** completion window.
 
-Realtime works across the [Responses API](/api-reference/responses-api/create-a-response) (`/v1/responses`) and [Chat Completions](/api-reference/chat-completions-api/create-a-chat-completion) (`/v1/chat/completions`). Use it for interactive chat, prototyping, and human-in-the-loop steps.
+Realtime works across the [Responses API](/api-reference/responses-api/create-a-response) (`/v1/responses`), Chat Completions (`/v1/chat/completions`). Use it for interactive chat, prototyping, and human-in-the-loop steps.
 
-```python theme={null}
+```python
 import os
 from openai import OpenAI
 
 client = OpenAI(
-    base_url="https://api.valarhq.ai/v1",
-    api_key=os.environ["VALAR_API_KEY"],
+    base_url="https://api.valarhq.ai/v1", # or read OPENAI_BASE_URL from the environment
+    api_key="YOUR_VALAR_API_KEY",  # or read OPENAI_API_KEY from the environment
 )
 
 response = client.responses.create(
@@ -37,7 +37,7 @@ Set `background=True` on the Responses API. The create call returns a response i
 
 Async jobs usually run on the **Standard** window (`standard`), the lower-cost default. Use async for agent loops, background jobs, and large fan-out. See [Sending requests at scale](/requests_at_scale).
 
-```python theme={null}
+```python
 started = client.responses.create(
     model="moonshotai/Kimi-K2.6",
     input="Classify this ticket and draft a reply.",
@@ -48,15 +48,15 @@ started = client.responses.create(
 print("Queued:", started.id)
 ```
 
-### Batch
+### Batch (Private Preview)
 
 <Note>
   **Coming soon.** Batch processing isn't generally available yet.
 </Note>
 
-Batch will let you submit many requests at once and retrieve the results when the set completes — the lowest cost and highest throughput, with the longest turnaround. It will run on the **Standard** window and suit large datasets, evals, and offline transforms.
+Batch will let you submit many requests at once and retrieve the results when the set completes - the lowest cost and highest throughput, with the longest turnaround. It will run on the **Standard** window and suit large datasets, evals, and offline transforms.
 
-Until it ships, run large workloads asynchronously with `background=True` — see [Sending requests at scale](/requests_at_scale).
+Until it ships, run large workloads asynchronously with `background=True`- see [Sending requests at scale](/requests_at_scale).
 
 ## Compare the modes
 
@@ -70,6 +70,9 @@ Until it ships, run large workloads asynchronously with `background=True` — se
 
 A completion window tells Valar how much wall-clock time per turn your workload can tolerate, and you pay less the more time you give it. There are exactly two:
 
+- **Now**: immediate, on-demand, at a higher rate. API value `asap`.
+- **Standard**: the default, targeting roughly 5 minutes, at a lower rate. API value `standard`.
+
 | Window | Avg. turn time | Price | Best for |
 | --- | --- | --- | --- |
 | Now (`asap`) | Immediate | Higher | Realtime calls, interactive UIs, human-in-the-loop |
@@ -81,7 +84,7 @@ Realtime uses the **Now** window; async — and batch, once available — typica
 
 Pass `metadata.completion_window` on the request:
 
-```python theme={null}
+```python
 response = client.responses.create(
     model="zai-org/GLM-5.1-FP8",
     input="Explain the key ideas behind transformers.",
@@ -112,6 +115,7 @@ Leave `completion_window` off and the request defaults to `standard` when the mo
   <Card title="Quickstart" href="/quickstart">
     Send your first request with an OpenAI-compatible client.
   </Card>
+
   <Card title="Sending requests at scale" href="/requests_at_scale">
     Fan out async and batch work across many requests.
   </Card>

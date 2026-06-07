@@ -15,7 +15,7 @@ Valar speaks the [OpenAI Responses API](https://developers.openai.com/api/refere
 Because agent work is rarely interactive, the API leans on a `background` mode. Send `background: true` and the request returns a response id straight away instead of blocking; you then retrieve that id until the job reports `completed`. Pair that with [completion windows](/inference-modes#completion-windows) to trade latency for price, and you can keep large batches in flight without holding open a connection per request.
 
 <Note>
-  Authenticate with `Authorization: Bearer <key>`. Generate keys from the dashboard at [app.valarhq.ai](https://app.valarhq.ai), and store them in the `VALAR_API_KEY` environment variable so the SDK and OpenAI clients pick them up automatically.
+  Authenticate with `Authorization: Bearer <key>`. Generate keys from the dashboard at [app.valarhq.ai](https://app.valarhq.ai), and store them in the `OPENAI_API_KEY` environment variable so the SDK and OpenAI clients pick them up automatically.
 </Note>
 
 ## Choose your execution mode

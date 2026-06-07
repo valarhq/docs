@@ -9,10 +9,26 @@ This walkthrough runs one realistic task end to end: classifying an inbound supp
 
 <Steps>
   <Step title="Create an API key">
-    Sign in at [app.valarhq.ai](https://app.valarhq.ai) and create a key from the dashboard.
+    Sign up at the [Valar Dashboard](https://app.valarhq.ai) and create an API key.
   </Step>
   <Step title="Point at Valar ">
-    Install the OpenAI SDK and point it at Valar. Set the base URL to `https://api.valarhq.ai/v1` and pass your key as a bearer token. Nothing else about the OpenAI client changes. 
+    Install the OpenAI SDK and point it at Valar:
+
+    1. Set the base URL to`https://api.valarhq.ai/v1` 
+    2. Pass the API key as a bearer token.
+
+     
+
+    ```python
+    from openai import OpenAI
+    
+    client = OpenAI(
+        base_url="https://api.valarhq.ai/v1", # or read OPENAI_BASE_URL from the environment
+        api_key="YOUR_VALAR_API_KEY",  # or read OPENAI_API_KEY from the environment
+    )
+    ```
+
+     
   </Step>
   <Step title="Dispatch the task in the background">
     Setting `background` returns a response id immediately rather than holding the connection open. For one ticket this is convenient; across a queue of them it is what lets the work run concurrently. Use a model from the [Models](/models) page — here, `zai-org/GLM-5.1-FP8`.
@@ -21,8 +37,8 @@ This walkthrough runs one realistic task end to end: classifying an inbound supp
     from openai import OpenAI
     
     client = OpenAI(
-        base_url="https://api.valarhq.ai/v1",
-        api_key="YOUR_VALAR_API_KEY",  # or read VALAR_API_KEY from the environment
+        base_url="https://api.valarhq.ai/v1", # or read OPENAI_BASE_URL from the environment
+        api_key="YOUR_VALAR_API_KEY",  # or read OPENAI_API_KEY from the environment
     )
     
     ticket = (
@@ -38,31 +54,14 @@ This walkthrough runs one realistic task end to end: classifying an inbound supp
             "billing, technical, or account, then draft a short reply."
         ),
         input=ticket,
-        background=True,  # returns a response id right away
+        background=True,  # returns a response id right away to poll
     )
     
     print("Queued:", started.id)
     ```
   </Step>
-  <Step title="Retrieve the request">
-    The create call hands back a response id and a status of `queued` or `in_progress`. Retrieve that id until it reaches `completed`, then read `output_text`. In production you would replace this poll loop with a [webhook](/webhooks) so you aren't holding a thread per job.
-
-    ```python
-    import time
-    
-    response = started
-    while response.status in {"queued", "in_progress"}:
-        time.sleep(2)
-        response = client.responses.retrieve(response.id)
-    
-    if response.status != "completed":
-        raise RuntimeError(f"Task ended as {response.status}")
-    
-    print(response.output_text)
-    ```
-  </Step>
   <Step title="Retrieve the result">
-    The create call hands back a response id and a status of `queued` or `in_progress`. Retrieve that id until it reaches `completed`, then read `output_text`. In production you would replace this poll loop with a [webhook](/webhooks) so you aren't holding a thread per job.
+    The create call hands back a response id and a status of `queued` or `in_progress`. Retrieve that id until it reaches `completed`, then read `output_text`. In production you can replace this poll loop with a [webhook](/webhooks) so you aren't holding a thread per job.
 
     ```python
     import time

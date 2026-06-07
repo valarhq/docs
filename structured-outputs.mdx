@@ -10,11 +10,11 @@ A structured output is a model response that is forced to match a [JSON Schema](
 
 Reach for structured outputs when the response feeds code rather than a human:
 
-- **Reliable parsing** — every response is valid JSON with the fields you declared, so `json.loads` never trips over prose, code fences, or trailing commentary.
-- **Extraction** — pull typed fields out of unstructured text, such as turning a support email into `{ category, priority, summary }`.
-- **Downstream automation** — route, store, or act on the result without a brittle post-processing step.
+- **Reliable parsing**: every response is valid JSON with the fields you declared, so `json.loads` never trips over prose, code fences, or trailing commentary.
+- **Extraction**: pull typed fields out of unstructured text, such as turning a support email into `{ category, priority, summary }`.
+- **Downstream automation**: route, store, or act on the result without a brittle post-processing step.
 
-Structured outputs work on both the Responses and Chat Completions APIs. The field you set differs per API, but the JSON Schema you pass is the same.
+Structured outputs are supported on Valar's APIs. The field you set differs per API, but the JSON Schema you pass is the same. Structured outputs work on both the Responses and Chat Completions APIs. The field you set differs per API, but the JSON Schema you pass is the same.
 
 ## Defining a schema per API
 
@@ -28,15 +28,15 @@ Each tab points at the same base URL, `https://api.valarhq.ai/v1`, and authentic
       `text.format.type: "json_object"` is **not** supported on the Responses API. Use `json_schema` to constrain the output.
     </Note>
 
-    ```python theme={null}
+    ```python
     import json
     from openai import OpenAI
-
+    
     client = OpenAI(
-        api_key="YOUR_VALAR_API_KEY",  # or rely on the OPENAI_API_KEY / VALAR_API_KEY env var
-        base_url="https://api.valarhq.ai/v1",
+        base_url="https://api.valarhq.ai/v1", # or read OPENAI_BASE_URL from the environment
+        api_key="YOUR_VALAR_API_KEY",  # or read OPENAI_API_KEY from the environment
     )
-
+    
     ticket_schema = {
         "type": "object",
         "properties": {
@@ -50,7 +50,7 @@ Each tab points at the same base URL, `https://api.valarhq.ai/v1`, and authentic
         "required": ["category", "priority", "summary"],
         "additionalProperties": False,
     }
-
+    
     response = client.responses.create(
         model="moonshotai/Kimi-K2.6",
         input="Triage this ticket: 'I was charged twice for my May invoice and need a refund ASAP.'",
@@ -63,24 +63,23 @@ Each tab points at the same base URL, `https://api.valarhq.ai/v1`, and authentic
             }
         },
     )
-
+    
     ticket = json.loads(response.output_text)
     print(ticket["category"], ticket["priority"])
     ```
   </Tab>
-
   <Tab title="Chat completions">
     On [Chat Completions](/api-reference/chat-completions-api/create-a-chat-completion), set `response_format` to a `json_schema` object. The schema is nested one level deeper, under `json_schema.schema`. This API also accepts `{ "type": "json_object" }` for free-form JSON without a schema.
 
-    ```python theme={null}
+    ```python
     import json
     from openai import OpenAI
-
+    
     client = OpenAI(
         api_key="YOUR_VALAR_API_KEY",
         base_url="https://api.valarhq.ai/v1",
     )
-
+    
     ticket_schema = {
         "type": "object",
         "properties": {
@@ -94,7 +93,7 @@ Each tab points at the same base URL, `https://api.valarhq.ai/v1`, and authentic
         "required": ["category", "priority", "summary"],
         "additionalProperties": False,
     }
-
+    
     completion = client.chat.completions.create(
         model="moonshotai/Kimi-K2.6",
         messages=[
@@ -112,7 +111,7 @@ Each tab points at the same base URL, `https://api.valarhq.ai/v1`, and authentic
             },
         },
     )
-
+    
     ticket = json.loads(completion.choices[0].message.content)
     print(ticket["category"], ticket["priority"])
     ```
@@ -128,15 +127,15 @@ For strict mode to hold, your schema must be one Valar can enforce. A schema tha
 <Tip>
   You rarely need to hand-write the schema. Generate it from a [Pydantic](https://docs.pydantic.dev/) model with `Model.model_json_schema()`, or from a [Zod](https://zod.dev/) schema with a JSON Schema converter, then drop the result into the `schema` field.
 
-  ```python theme={null}
+  ```python
   from pydantic import BaseModel
   from typing import Literal
-
+  
   class SupportTicket(BaseModel):
       category: Literal["billing", "bug", "feature_request", "account", "other"]
       priority: Literal["low", "medium", "high", "urgent"]
       summary: str
-
+  
   ticket_schema = SupportTicket.model_json_schema()
   ```
 </Tip>
