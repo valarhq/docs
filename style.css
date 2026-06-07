@@ -91,6 +91,15 @@
 .cap-logo[data-org="zhipu"]    { -webkit-mask-image: url("/images/logos/zhipu.svg");    mask-image: url("/images/logos/zhipu.svg"); }
 .cap-logo[data-org="qwen"]     { -webkit-mask-image: url("/images/logos/qwen.svg");     mask-image: url("/images/logos/qwen.svg"); }
 
+/* Pricing table: give every cell consistent padding so Mintlify's
+ * prose first-child/last-child padding rules don't shift cells around
+ * when a rowSpan'd cell makes a different <td> the row's :first-child.
+ */
+.pricing-table th,
+.pricing-table td {
+  padding: 0.7rem 0.75rem;
+}
+
 /* Slug cell */
 .capabilities-table .cap-th-slug,
 .capabilities-table .cap-cell-slug {
