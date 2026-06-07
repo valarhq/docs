@@ -15,7 +15,6 @@
 .capabilities-table {
   width: 100%;
   border-collapse: collapse;
-  table-layout: fixed;
   font-size: 0.875rem;
 }
 
@@ -93,6 +92,11 @@
 .cap-logo[data-org="qwen"]     { -webkit-mask-image: url("/images/logos/qwen.svg");     mask-image: url("/images/logos/qwen.svg"); }
 
 /* Slug cell */
+.capabilities-table .cap-th-slug,
+.capabilities-table .cap-cell-slug {
+  width: auto;
+  min-width: 22rem;
+}
 .cap-slug-actions {
   display: flex;
   align-items: center;
