@@ -86,7 +86,7 @@ async def main(num_requests: int, max_output_tokens: int, model: str):
                 async with poll_sem:
                     response = await client.responses.retrieve(response_id)
 					if response.status in {"queued", "in_progress"}:
-					    asyncio.sleep.sleep(1)
+					    await asyncio.sleep(1)
 						continue
 
                     completed[response_id] = response
