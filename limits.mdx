@@ -1,0 +1,90 @@
+---
+title: "Limits and quotas"
+description: "Default per-organization request rate and spend cap, the 429 errors they raise, and how to handle them"
+---
+
+Every Valar organization ships with two enforced defaults that protect both you and the platform from runaway traffic and runaway bills. Both are checked before a request reaches the model, so a rejected call doesn't consume tokens and isn't billed.
+
+| Limit                 | Default              | Scope                | Error code on reject                  |
+| --------------------- | -------------------- | -------------------- | ------------------------------------- |
+| Request rate          | 60 requests / minute | Per organization     | `429 rate_limit_exceeded`             |
+| Rolling spend cap     | \$5,000 / 30 days    | Per organization     | `429 insufficient_quota`              |
+
+Limits apply to the whole organization, summed across every API key. They cover both the Responses API and Chat Completions, on every completion window.
+
+## Request rate limit
+
+Valar admits up to **60 requests per minute** per organization, metered as a leaky bucket. Bursts are allowed up to that ceiling, after which new submissions are rejected until the bucket refills.
+
+Every response — successful or rejected — carries the current budget in standard headers:
+
+| Header                | Meaning                                                       |
+| --------------------- | ------------------------------------------------------------- |
+| `X-RateLimit-Limit`     | The configured rate, in requests per window                   |
+| `X-RateLimit-Remaining` | Requests left in the current window                           |
+| `X-RateLimit-Reset`     | Seconds until the bucket fully refills                        |
+| `Retry-After`           | Seconds to wait before retrying (only on a `429`)             |
+
+On rejection the response body is the standard error envelope:
+
+```json
+{
+  "error": {
+    "type": "rate_limit_exceeded",
+    "message": "request rate limit exceeded for this organization"
+  }
+}
+```
+
+### Handling a rate-limit `429`
+
+Wait the `Retry-After` value, then retry the same request. If you are using an idempotency key (recommended for any retry), the original key replays cleanly — see [Idempotent Requests](/idempotency).
+
+```python
+import time
+import requests
+
+resp = requests.post(url, headers=headers, json=payload)
+if resp.status_code == 429 and resp.json()["error"]["type"] == "rate_limit_exceeded":
+    time.sleep(int(resp.headers.get("Retry-After", "1")))
+    resp = requests.post(url, headers=headers, json=payload)
+```
+
+For high-volume workloads, bound concurrency on the client so you stay under the limit rather than relying on `429` backoff. The pattern is covered in [Sending requests at scale](/requests_at_scale).
+
+## Rolling spend cap
+
+Valar tracks priced spend over a rolling 30-day window and rejects new submissions once the organization reaches **\$5,000**. The cap is evaluated against the same priced usage that appears on your invoice (see [Pricing](/pricing)), so the cap and the bill never diverge.
+
+A rejected request never runs inference and is never billed. The rejected response is:
+
+```json
+{
+  "error": {
+    "type": "insufficient_quota",
+    "message": "monthly spend quota exceeded for this organization"
+  }
+}
+```
+
+### Handling a quota `429`
+
+Unlike a rate-limit `429`, an `insufficient_quota` response will keep failing until either spend ages out of the 30-day window or the cap is raised. Do not blind-retry — surface the failure to whoever runs the workload, and [request a raise](#requesting-a-higher-limit) if you need more headroom.
+
+### Idempotent retries are never quota-rejected
+
+If a request was already accepted under an idempotency key, replaying that key always returns the stored response — even if the organization has since crossed the cap on other traffic. At-least-once delivery stays safe across a quota change.
+
+## Inspecting current usage
+
+Query rolling spend and remaining budget from the Usage API. See [Usage overview](/usage) and the [endpoints reference](/usage-endpoints) for the full request and response shapes.
+
+## Requesting a higher limit
+
+Both defaults can be raised for your organization. Reach out via the [support page](/support) with:
+
+- The organization ID (visible in the [dashboard](https://app.valarhq.ai))
+- The limit you want raised (rate, spend, or both)
+- The target value and the workload that justifies it
+
+Operators apply the override directly; existing rate and spend already in the rolling window are preserved.
