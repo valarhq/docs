@@ -94,11 +94,11 @@ TOOL_DISPATCH = {
 def await_completion(response, timeout=300):
     """Poll a background response until it settles."""
     deadline = time.time() + timeout
-	while response.status in {"queued", "in_progress"}:
+    while response.status in {"queued", "in_progress"}:
         if time.time() > deadline:
             raise TimeoutError(f"{response.id} did not complete within {timeout}s")
-	    time.sleep(2)
-	    response = client.responses.retrieve(response.id)
+        time.sleep(2)
+        response = client.responses.retrieve(response.id)
 
     if response.status != "completed":
         raise RuntimeError(f"{response.id} status: {response.status}")
@@ -160,7 +160,7 @@ print("Turn 2:", second.output_text)
   Set `strict: true` on each tool's parameters. This enables structured-output guarantees, so the `arguments` JSON the model returns always conforms to your schema and `json.loads` never trips over a malformed payload.
 </Tip>
 
-- **Prefer** `background=True `**for anything long-running.** Valar optimizes for throughput, so an individual request can run longer than a latency-first API would. Background mode avoids HTTP timeouts and lets you poll for completion instead. **Prefer** `background=True `**for anything long-running.**
+- **Prefer** `background=True `**for anything long-running.** Valar optimizes for throughput, so an individual request can run longer than a latency-first API would. Background mode avoids HTTP timeouts and lets you poll for completion instead.
 - **Match the completion window to your loop.** The default `standard` window balances cost against trajectory time for most agents. Switch to the **Now** (`asap`) window when a single turn is latency-sensitive and a person or system is waiting on it. See [Completion windows](/inference-modes#completion-windows) for response-time and pricing details.
 - **Replay the complete conversation every request.** Every prior message, all `response.output` items, and every `function_call_output` must be present. Output items drop back in without conversion.
 - **Handle parallel calls.** A single response can contain several `function_call` items at once; execute them all and return one `function_call_output` per `call_id`.
