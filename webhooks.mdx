@@ -13,7 +13,7 @@ Both keys live inside the `metadata` object on the create request.
   The destination URL for the callback. Must be an `http` or `https` URL. If you omit it or pass a value that can't be used, no callback is sent and the request itself is unaffected.
 </ParamField>
 
-<ParamField path="metadata.completion_webhook_token" type="string">
+<ParamField path="metadata.webhook_token" type="string">
   An optional shared secret. Valar sends its value as a Bearer token in the callback's `Authorization` header so your endpoint can confirm the request is genuine.
 </ParamField>
 
@@ -68,7 +68,7 @@ Both keys live inside the `metadata` object on the create request.
         background=True,
         metadata={
             "completion_webhook": "https://app.example.com/hooks/inference-done",
-            "completion_webhook_token": "whk_3f0a9c2e7b14",
+            "webhook_token": "whk_3f0a9c2e7b14",
         },
     )
     ```
@@ -90,7 +90,7 @@ The callback is a single POST request.
 </ResponseField>
 
 <ResponseField name="Authorization" type="header">
-  Present only when `completion_webhook_token` was set. Carries `Bearer <completion_webhook_token>`.
+  Present only when `webhook_token` was set. Carries `Bearer <webhook_token>`.
 </ResponseField>
 
 <ResponseField name="body" type="object">
