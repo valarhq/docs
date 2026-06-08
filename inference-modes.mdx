@@ -14,6 +14,19 @@ A normal synchronous request that returns the result immediately. You send the c
 
 Realtime works across the [Responses API](/api-reference/responses-api/create-a-response) (`/v1/responses`), Chat Completions (`/v1/chat/completions`). Use it for interactive chat, prototyping, and human-in-the-loop steps.
 
+Both surfaces also accept `stream: true` for token-level Server-Sent Events when you want to show output as it's generated — see the [streaming support matrix](/support#behavior-shared-across-every-api).
+
+```python
+with client.responses.stream(
+    model="moonshotai/Kimi-K2.6",
+    input="Summarize the latest support ticket in one sentence.",
+) as stream:
+    for event in stream:
+        if event.type == "response.output_text.delta":
+            print(event.delta, end="", flush=True)
+    final = stream.get_final_response()
+```
+
 ```python
 import os
 from openai import OpenAI
@@ -36,6 +49,8 @@ print(response.output_text)
 Set `background=True` on the Responses API. The create call returns a response id immediately, then you poll the [retrieve endpoint](/api-reference/responses-api/retrieve-a-response) or receive a [webhook](/webhooks) when the work finishes. On the Standard window a turn takes at most a minute and is usually much faster, so async clears high throughput at lower cost.
 
 Async jobs usually run on the **Standard** window (`standard`), the lower-cost default. Use async for agent loops, background jobs, and large fan-out. See [Sending requests at scale](/requests_at_scale).
+
+You can also keep the connection open with `stream: true` instead of `background: true` — streaming is accepted on both completion windows, so a `standard`-window call streams tokens live as the worker produces them and terminates at the same time the durable record reveals. Pick `background: true` when you want to poll or use webhooks; pick `stream: true` when the caller is happy to hold the connection and wants tokens as they arrive. The two are mutually exclusive.
 
 ```python
 started = client.responses.create(

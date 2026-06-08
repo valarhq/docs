@@ -18,7 +18,7 @@ The same [models](/models) and [completion windows](/completion-windows) work ac
 
 Before the per-API detail, a few rules hold no matter which surface you call:
 
-- **Streaming is Chat Completions only.** Pass `stream: true` to Chat Completions and you get Server-Sent Events (`chat.completion.chunk`); add `stream_options.include_usage` for a closing usage chunk. The Responses and Messages APIs reject `stream: true`. For long jobs, use `background: true` on the Responses API and poll or wait on [webhooks](/webhooks).
+- **Streaming works on the Responses and Chat Completions APIs.** Pass `stream: true` and you get Server-Sent Events — `chat.completion.chunk` frames on Chat Completions, and the OpenAI-spec `response.created` / `response.output_item.added` / `response.content_part.added` / `response.output_text.delta` / `response.completed` event sequence on the Responses API (compatible with the OpenAI Python SDK's `client.responses.stream(...)` accumulator). Streaming is accepted on both the **Now** and **Standard** [completion windows](/inference-modes#completion-windows). On Chat Completions, add `stream_options.include_usage` for a closing usage chunk. The Messages API still rejects `stream: true`. `stream: true` with `background: true` is not supported — choose one or the other.
 - **Completion windows steer scheduling and price.** Set `metadata.completion_window` to `"asap"` (the **Now** tier) or `"standard"`. See [Completion windows](/completion-windows) and [Pricing](/pricing).
 - **Webhooks fire on completion.** Set `metadata.completion_webhook` to receive a POST when processing finishes. See [Webhooks](/webhooks).
 - **Responses are always stored.** `store: false` is unsupported.
@@ -70,7 +70,7 @@ Each accordion below lists what the API accepts and what it rejects. Open the on
 
     | Feature | Notes |
     | --- | --- |
-    | **Streaming** | `stream: true` is rejected. Every response comes back as one JSON object. |
+    | **Streaming** | `stream: true` returns Server-Sent Events in the OpenAI-spec sequence: `response.created`, `response.output_item.added`, `response.content_part.added`, one or more `response.output_text.delta`, then `response.output_text.done`, `response.content_part.done`, `response.output_item.done`, and a `response.completed` terminator (or `response.failed` on error). Compatible with the OpenAI Python SDK's `client.responses.stream(...)`. Works on both the **Now** and **Standard** completion windows. `stream: true` with `background: true` is rejected. |
     | **Instructions** | `instructions` is unsupported. Put system messages straight into `input`. |
     | **Conversation chaining** | `previous_response_id` and `conversation` are unsupported. Resend the full input on each call. |
     | **Prompt templates** | The `prompt` parameter is unsupported. |
