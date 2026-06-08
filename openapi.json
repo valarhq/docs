@@ -99,10 +99,11 @@
         "properties": {
           "completion_window": {
             "type": "string",
-            "description": "The [completion window](/inference-modes#completion-windows), or latency tier, you want for this request. `asap` is the on-demand **Now** tier; `standard` is the lower-cost default. Check the [Pricing](/pricing) page to see which windows each model supports. If you leave it out, Valar picks `standard` when the model supports it and falls back to `asap` otherwise. See [default behavior](/inference-modes#default-behavior).",
+            "description": "The [completion window](/inference-modes#completion-windows), or latency tier, you want for this request. `asap` is the on-demand **Now** tier; `standard` is the lower-cost default; `flex` is a durable async tier with a relaxed reveal window of up to about 5 minutes at the lowest rate. Check the [Pricing](/pricing) page to see which windows each model supports. If you leave it out, Valar picks `standard` when the model supports it and falls back to `asap` otherwise. See [default behavior](/inference-modes#default-behavior).",
             "enum": [
               "asap",
-              "standard"
+              "standard",
+              "flex"
             ]
           },
           "completion_webhook": {
