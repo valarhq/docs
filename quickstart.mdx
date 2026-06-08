@@ -86,5 +86,6 @@ A single triaged ticket is the unit; an agent is many of them in a loop. From he
 - See [**Models**](/models) for the full list of supported models, and [**Pricing**](/pricing) for per-token rates.
 - Turn this into a tool-using agent that looks up the customer's billing record before replying - see [Building a tool-calling agent](/agents).
 - Run the same task over a backlog of tickets at once with [Requests at scale](/requests_at_scale), choosing a [completion window](/inference-modes#completion-windows) per the latency you can tolerate.
+- Stream tokens as they're generated instead of polling — pass `stream=True` to `client.responses.create(...)` (or use `client.responses.stream(...)`) to receive an OpenAI-spec Server-Sent Events stream. See the [streaming support matrix](/support#behavior-shared-across-every-api).
 
 Questions about a specific workload can go to [support@valarhq.ai](mailto:support@valarhq.ai).
