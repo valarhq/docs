@@ -78,7 +78,8 @@
             "icon": "gauge-high",
             "pages": [
               "webhooks",
-              "idempotency"
+              "idempotency",
+              "limits"
             ]
           },
           {

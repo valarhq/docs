@@ -60,7 +60,8 @@ Reach for the same idempotency key whenever the outcome is ambiguous. Don't retr
 | --- | --- | --- |
 | Network error / timeout | Ambiguous - the server may or may not have received the request | Retry with the same idempotency key |
 | `5xx` on a POST | Transient server-side failure | Retry with the same idempotency key |
-| `429` \+ `Retry-After` | Rate limit | Wait the `Retry-After` value, then retry |
+| `429 rate_limit_exceeded` \+ `Retry-After` | Organization request rate exceeded (60 req/min default) | Wait the `Retry-After` value, then retry. See [Limits and quotas](/limits) |
+| `429 insufficient_quota` | Organization rolling 30-day spend cap reached (\$5,000 default) | Do not blind-retry — request a raise or wait for spend to age out. See [Limits and quotas](/limits) |
 | `body.status: "failed"` | Inference genuinely failed | Investigate the cause; do not blind-retry |
 
 ## See also
