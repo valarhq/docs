@@ -10,11 +10,11 @@ When a request can take a while to finish, you don't have to poll `GET /v1/respo
 Both keys live inside the `metadata` object on the create request.
 
 <ParamField path="metadata.completion_webhook" type="string">
-  The destination URL for the callback. Must be an `http` or `https` URL. If you omit it or pass a value that can't be used, no callback is sent and the request itself is unaffected.
+  The destination URL for the callback. Must be an `https` URL that resolves to a public address — Valar refuses `http`, private, and loopback targets, and never follows redirects. If you omit it or pass a value that can't be used, no callback is sent and the request itself is unaffected.
 </ParamField>
 
 <ParamField path="metadata.webhook_token" type="string">
-  An optional shared secret. Valar sends its value as a Bearer token in the callback's `Authorization` header so your endpoint can confirm the request is genuine.
+  An optional shared secret. Valar sends its value as a Bearer token in the callback's `Authorization` header, and uses it as the key for the `X-Valar-Signature` HMAC — so your endpoint can confirm the request is genuine and verify it hasn't been tampered with or replayed. See [Verify the signature](#verify-the-signature).
 </ParamField>
 
 ## Set up an endpoint
@@ -93,9 +93,70 @@ The callback is a single POST request.
   Present only when `webhook_token` was set. Carries `Bearer <webhook_token>`.
 </ResponseField>
 
+<ResponseField name="X-Valar-Response-Id" type="header">
+  The response `id`, also present in the body. It's your deduplication key and an input to signature verification.
+</ResponseField>
+
+<ResponseField name="X-Valar-Signature" type="header">
+  Present only when `webhook_token` was set. A Stripe-style `t=<unix>,v1=<hmac>` value you can verify to confirm integrity and reject replays. See [Verify the signature](#verify-the-signature).
+</ResponseField>
+
 <ResponseField name="body" type="object">
   The full response object, byte-for-byte identical to a `GET /v1/responses/{response_id}` call. The response `id` lives here and is your key for deduplication.
 </ResponseField>
+
+## Verify the signature
+
+When you set a `webhook_token`, every callback carries an `X-Valar-Signature` header so you can confirm the payload came from Valar, hasn't been altered, and isn't a replay. The header is Stripe-style:
+
+```
+X-Valar-Signature: t=1717000000,v1=3f8a...c1
+```
+
+- `t` is the Unix timestamp (seconds) when Valar signed the delivery.
+- `v1` is `HMAC-SHA256`, keyed by your `webhook_token`, over the string `{t}.{response_id}.{raw_body}` — the timestamp, the `X-Valar-Response-Id` header, and the exact raw request body, joined with `.`.
+
+<Steps>
+  <Step title="Recompute the HMAC">
+    Build the signed payload from `t`, the `X-Valar-Response-Id` header, and the **raw** request body, then HMAC it with your `webhook_token`.
+  </Step>
+  <Step title="Compare in constant time">
+    Reject the request if your computed value doesn't equal `v1`. Use a constant-time comparison.
+  </Step>
+  <Step title="Reject stale timestamps">
+    Reject the request if `t` is outside a tolerance window — 300 seconds is a good default. This is what stops a captured delivery from being replayed later.
+  </Step>
+</Steps>
+
+```python
+import hashlib, hmac, time
+from fastapi import Request, HTTPException
+
+WEBHOOK_TOKEN = "whk_3f0a9c2e7b14"
+TOLERANCE_SECONDS = 300
+
+async def verify(request: Request):
+    raw = await request.body()  # the exact bytes — do not re-serialize the JSON
+    parts = dict(p.split("=", 1) for p in request.headers["X-Valar-Signature"].split(","))
+    t, v1 = parts["t"], parts["v1"]
+
+    if abs(time.time() - int(t)) > TOLERANCE_SECONDS:
+        raise HTTPException(400, "stale signature")
+
+    response_id = request.headers["X-Valar-Response-Id"]
+    signed = f"{t}.{response_id}.".encode() + raw
+    expected = hmac.new(WEBHOOK_TOKEN.encode(), signed, hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(expected, v1):
+        raise HTTPException(401, "bad signature")
+```
+
+<Note>
+  Verify against the **raw** request bytes, exactly as received. Re-serializing the parsed JSON can change key order or whitespace and break the comparison.
+</Note>
+
+<Tip>
+  The signature covers integrity and replay; the `Authorization: Bearer` header covers identity. Checking the signature is the stronger of the two — a valid signature already proves the sender holds your `webhook_token`.
+</Tip>
 
 ## Delivery semantics
 
