@@ -19,7 +19,7 @@ The same [models](/models) and [completion windows](/completion-windows) work ac
 Before the per-API detail, a few rules hold no matter which surface you call:
 
 - **Streaming is Chat Completions only.** Pass `stream: true` to Chat Completions and you get Server-Sent Events (`chat.completion.chunk`); add `stream_options.include_usage` for a closing usage chunk. The Responses and Messages APIs reject `stream: true`. For long jobs, use `background: true` on the Responses API and poll or wait on [webhooks](/webhooks).
-- **Completion windows steer scheduling and price.** Set `metadata.completion_window` to `"asap"` (the **Now** tier) or `"standard"`. See [Completion windows](/completion-windows) and [Pricing](/pricing).
+- **Completion windows steer scheduling and price.** Set `metadata.completion_window` to `"asap"` (the **Now** tier), `"standard"`, or `"flex"` (background only). See [Completion windows](/completion-windows) and [Pricing](/pricing).
 - **Webhooks fire on completion.** Set `metadata.completion_webhook` to receive a POST when processing finishes. See [Webhooks](/webhooks).
 - **Responses are always stored.** `store: false` is unsupported.
 
