@@ -1,0 +1,107 @@
+---
+title: "Migrating to Valar"
+description: "Move an OpenAI-compatible app to Valar with a base URL, key, and model change"
+keywords: ["migrate", "migration", "openai", "drop-in", "base url", "switch"]
+---
+
+Valar speaks the OpenAI **Responses** and **Chat Completions** APIs, so moving an app from OpenAI — or any OpenAI-compatible provider — is mostly three changes: the base URL, the API key, and the model id. Your request and response shapes stay the same.
+
+<Steps>
+  <Step title="Create a Valar API key">
+    Sign in at the [Valar dashboard](https://app.valarhq.ai) and create a key. Store it as `VALAR_API_KEY` so the OpenAI SDK and other clients pick it up.
+
+    ```bash
+    export VALAR_API_KEY=sk_...
+    ```
+  </Step>
+  <Step title="Point your client at Valar">
+    Keep your existing OpenAI client. Change the base URL to `https://api.valarhq.ai/v1` and pass your Valar key — Valar authenticates with `Authorization: Bearer <key>`.
+
+    <CodeGroup>
+
+    ```python Python
+    from openai import OpenAI
+
+    client = OpenAI(
+        base_url="https://api.valarhq.ai/v1",
+        api_key="YOUR_VALAR_API_KEY",
+    )
+    ```
+
+    ```ts TypeScript
+    import OpenAI from "openai";
+
+    const client = new OpenAI({
+      baseURL: "https://api.valarhq.ai/v1",
+      apiKey: process.env.VALAR_API_KEY,
+    });
+    ```
+
+    ```bash cURL
+    curl https://api.valarhq.ai/v1/responses \
+      -H "Authorization: Bearer $VALAR_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{"model": "moonshotai/Kimi-K2.6", "input": "Hello"}'
+    ```
+
+    </CodeGroup>
+  </Step>
+  <Step title="Switch to a Valar model">
+    Valar serves open-weight models, so update the `model` field — OpenAI names like `gpt-4o` won't resolve. Pick one from the [Models](/models) page, such as `moonshotai/Kimi-K2.6` or `zai-org/GLM-5.1-FP8`, and confirm availability at runtime with `GET /v1/models`.
+  </Step>
+  <Step title="Tune cost and latency (optional)">
+    For work that doesn't need an instant answer, set `background=True` and choose a [completion window](/inference-modes#completion-windows) — `standard` or `flex` — to trade a little latency for a lower rate. See [Inference modes](/inference-modes).
+  </Step>
+</Steps>
+
+## What changes
+
+|  | OpenAI | Valar |
+| --- | --- | --- |
+| Base URL | `https://api.openai.com/v1` | `https://api.valarhq.ai/v1` |
+| Auth header | `Authorization: Bearer <openai key>` | `Authorization: Bearer <valar key>` |
+| Key env var | `OPENAI_API_KEY` | `VALAR_API_KEY` |
+| Model id | `gpt-4o`, `o3`, … | open-weight ids from [Models](/models) |
+| Surfaces | Responses, Chat Completions | Responses, Chat Completions |
+
+A few behaviors differ from OpenAI — worth checking before you ship:
+
+- **Streaming is Chat Completions only.** The Responses API rejects `stream: true`; for long jobs use `background: true` and poll or wait on [webhooks](/webhooks). [Inference modes](/inference-modes) covers the realtime / async / batch split.
+- **Completion windows replace latency tuning.** Use `metadata.completion_window` (`asap`, `standard`, or `flex`) instead of `service_tier`. See [Pricing](/pricing).
+- **Structured outputs work the same way** — `text.format` on Responses, or `response_format` on Chat Completions, with a JSON schema. See [Structured outputs](/structured-outputs).
+- **Some OpenAI-only parameters are ignored or rejected** (server-side tools, conversation chaining, sampling penalties, and others). The [API support matrix](/support) lists exactly what each surface accepts.
+
+<Note>
+  Coming from **Anthropic**? Valar's inference runs on the OpenAI-compatible Responses and Chat Completions APIs, so point the OpenAI SDK at Valar rather than the Anthropic SDK.
+</Note>
+
+## Let your coding agent do it
+
+Valar's docs are built to be read by agents: every page has a Markdown view, the full index lives at [`/llms.txt`](https://docs.valarhq.ai/llms.txt), and there's an MCP server at `https://docs.valarhq.ai/mcp`. Point your coding agent (Cursor, Claude Code, and the like) at the docs and hand it a prompt such as:
+
+```text
+Migrate this project from OpenAI to Valar (https://docs.valarhq.ai).
+- Change the OpenAI client base_url to https://api.valarhq.ai/v1 and read the key from VALAR_API_KEY.
+- Replace OpenAI model ids with a Valar model from /models (e.g. moonshotai/Kimi-K2.6).
+- Keep request and response shapes the same; flag any OpenAI-only params Valar doesn't support (see /support).
+```
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" href="/quickstart">
+    Make your first Valar request.
+  </Card>
+
+  <Card title="Models" href="/models">
+    Pick a model and copy its id.
+  </Card>
+
+  <Card title="Inference modes" href="/inference-modes">
+    Realtime, async, batch, and completion windows.
+  </Card>
+
+  <Card title="Structured outputs" href="/structured-outputs">
+    Get schema-constrained JSON back.
+  </Card>
+</CardGroup>
