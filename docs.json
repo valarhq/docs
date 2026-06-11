@@ -51,10 +51,10 @@
             "pages": [
               "index",
               "quickstart",
-              "migrate",
               "inference-modes",
               "models",
-              "pricing"
+              "pricing",
+              "migrate"
             ]
           },
           {
