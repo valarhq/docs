@@ -122,7 +122,8 @@
           },
           {
             "group": "Usage",
-            "pages": ["usage", "usage-endpoints"]
+            "pages": ["usage", "usage-endpoints"],
+            "hidden": true
           }
         ]
       }
