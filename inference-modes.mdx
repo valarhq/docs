@@ -60,13 +60,7 @@ print("Queued:", started.id)
 
 ### Batch (Private Preview)
 
-<Note>
-  **Coming soon.** Batch processing isn't generally available yet.
-</Note>
-
-Batch will let you submit many requests at once and retrieve the results when the set completes - the lowest cost and highest throughput, with the longest turnaround. It will run on the **Standard** window and suit large datasets, evals, and offline transforms.
-
-Until it ships, run large workloads asynchronously with `background=True`- see [Sending requests at scale](/requests_at_scale).
+Batch lets you submit many requests at once and retrieve the results when the set completes — the lowest cost and highest throughput, with the longest turnaround. It runs on the **Standard** window and suits large datasets, evals, and offline transforms. For the end-to-end workflow, see [Sending requests at scale](/requests_at_scale).
 
 ## Compare the modes
 
@@ -74,7 +68,7 @@ Until it ships, run large workloads asynchronously with `background=True`- see [
 | --- | --- | --- | --- | --- |
 | Realtime | Synchronous request, no `background` | Seconds | Highest | Interactive chat, prototyping, human-in-the-loop |
 | Async | Responses API with `background=True` | Minutes | Lower | Agent loops, background jobs, large fan-out |
-| Batch _(coming soon)_ | Batches API, retrieve on completion | Up to hours | Lowest | Large datasets, evals, offline transforms |
+| Batch | Batches API, retrieve on completion | Up to hours | Lowest | Large datasets, evals, offline transforms |
 
 ## Completion windows
 
