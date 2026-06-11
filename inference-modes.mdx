@@ -6,6 +6,16 @@ keywords: ["realtime", "async", "batch", "background", "completion window", "now
 
 Valar optimizes for throughput and cost on long-running agent work, not the latency of a single call. You pick an execution mode by how soon you need each result, then tune the cost-versus-latency trade-off with a completion window.
 
+## Completion windows at a glance
+
+A completion window sets how much wall-clock time per turn you're willing to trade for a lower rate. Valar runs three. Choose one with `metadata.completion_window`, or leave it off and get `standard`. Each is detailed in [Completion windows](#completion-windows) below.
+
+| Window | Turnaround | Best for | Relative cost |
+| --- | --- | --- | --- |
+| `asap` (Now) | Immediate | Interactive and human-in-the-loop requests | Baseline |
+| `standard` | Under a minute, usually much faster | Everyday agent loops where cost matters | Lower |
+| `flex` | Up to ~3 minutes, background only | Bulk jobs, evals, and offline runs | Lowest |
+
 ## The three modes
 
 ### Realtime
