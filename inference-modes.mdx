@@ -12,9 +12,9 @@ A completion window sets how much wall-clock time per turn you're willing to tra
 
 | Window | Turnaround | Best for | Relative cost |
 | --- | --- | --- | --- |
-| `asap` (Now) | Immediate | Interactive and human-in-the-loop requests | Baseline |
-| `standard` | Under a minute, usually much faster | Everyday agent loops where cost matters | Lower |
-| `flex` | Up to ~3 minutes, background only | Bulk jobs, evals, and offline runs | Lowest |
+| Now (`asap`) | Immediate | Interactive and human-in-the-loop requests | Baseline |
+| Standard (`standard`) | Under a minute, usually much faster | Everyday agent loops where cost matters | ~50% lower |
+| Flex (`flex`) | Up to 5 minutes, background only | Bulk jobs, evals, and offline runs | ~50% lower |
 
 ## The three modes
 
@@ -84,7 +84,7 @@ A completion window tells Valar how much wall-clock time per turn your workload 
 | --- | --- | --- | --- |
 | Now (`asap`) | Immediate | Highest | Realtime calls, interactive UIs, human-in-the-loop |
 | Standard (`standard`) | Up to 1 min, usually much faster | Lower | Cost-optimized agents, async loops |
-| Flex (`flex`) | Up to ~3 min | Lowest | Background bulk work that can wait |
+| Flex (`flex`) | Up to 5 min | Lowest | Background bulk work that can wait |
 
 Realtime uses the **Now** window; async work uses **Standard** for lower cost, or **Flex** for the cheapest background runs. Each model-and-window price pairing is on the [Pricing](/pricing) page.
 
@@ -109,7 +109,7 @@ Accepted values are `"asap"` (Now), `"standard"`, and `"flex"`.
 
 **Standard** is the default wherever a model supports it. It runs on Valar's maximum-efficiency serving stack with a turn-time ceiling of one minute — and in practice most turns complete much faster than that. Most of Valar's published prices reference this window, and it's the right default for async agent loops and batch jobs.
 
-**Flex** is the lowest-cost tier, for background bulk work that can tolerate a little extra latency. It targets a turn-time ceiling of about three minutes and **requires `background=True`** — it isn't available for realtime or synchronous calls. Flex is always explicit: Valar never selects it for you, so request it with `metadata.completion_window: "flex"` when you want it.
+**Flex** is the lowest-cost tier, for background bulk work that can tolerate a little extra latency. It targets a turn-time ceiling of about five minutes and **requires `background=True`** — it isn't available for realtime or synchronous calls. Flex is always explicit: Valar never selects it for you, so request it with `metadata.completion_window: "flex"` when you want it.
 
 ### Default behavior
 
